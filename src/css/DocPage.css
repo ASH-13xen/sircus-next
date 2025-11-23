@@ -1,0 +1,89 @@
+/* Main container for the documentation content */
+.doc-container {
+  color: white;
+  padding: 1rem 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Main title for the topic (e.g., "Arrays") */
+.doc-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: lab(72 -15.6 -43.39); /* Theme accent color */
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Subheadings within the page (e.g., "Key Concepts") */
+.doc-subtitle {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #e0e0e0;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Standard paragraph text */
+.doc-paragraph {
+  max-width: 100%; /* Use full width of the container */
+  line-height: 1.7;
+  font-size: 1.1rem;
+  color: #cccccc;
+}
+
+/* Unordered list for key concepts */
+.doc-list {
+  max-width: 100%;
+  line-height: 1.8;
+  padding-left: 20px; /* Standard indentation for lists */
+}
+
+/* Direct styling for list items to ensure color is white */
+.doc-list li {
+  color: white;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+/* Styling for tables used for complexity analysis */
+.styled-table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 1.5rem;
+  font-size: 1rem;
+}
+
+.styled-table th,
+.styled-table td {
+  border: 1px solid lab(72 -15.6 -43.39);
+  padding: 12px;
+  text-align: left;
+}
+
+.styled-table th {
+  background-color: rgb(23, 31, 34); /* Faint accent color for header */
+  color: lab(72 -15.6 -43.39);
+  font-weight: bold;
+}
+
+.styled-table td {
+  color: #e0e0e0;
+}
+
+/* Styling for code blocks */
+.code-block {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  border-radius: 10px;
+  max-width: 100%;
+  width: 100%;
+  overflow-x: auto; /* Allow horizontal scrolling for long code lines */
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1rem;
+  margin-top: 1.5rem;
+}
+
+
