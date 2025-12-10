@@ -1,6 +1,5 @@
 "use client"; 
 
-import React from "react";
 import { ArrowRight, Shield, Code, Database, Brain, BookOpen, Layers } from "lucide-react";
 
 
@@ -53,7 +52,7 @@ const LearnPage = () => {
       
       {/* Header Section */}
       <div className="max-w-5xl mx-auto mb-12 pt-8">
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-linear-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
           Learning Paths
         </h1>
         <p className="text-slate-400 text-lg max-w-2xl">
@@ -75,7 +74,7 @@ const LearnPage = () => {
             `}>
               {/* Hover Gradient Effect */}
               {!subject.disabled && (
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               )}
 
               <div className="relative z-10 flex flex-col h-full">
@@ -87,7 +86,7 @@ const LearnPage = () => {
                   {subject.name}
                 </h2>
                 
-                <p className="text-slate-400 text-sm flex-grow mb-6">
+                <p className="text-slate-400 text-sm grow mb-6">
                   {subject.description}
                 </p>
 
