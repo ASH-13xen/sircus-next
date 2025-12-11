@@ -120,15 +120,87 @@ export const updateUser = mutation({
     });
   },
 });
+export const getUserById = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    
+    // If the ID is invalid or user deleted
+    if (!user) return null;
+
+    return user;
+  },
+});
 export const getLeaderboard = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    // We now accept arrays!
+    years: v.optional(v.array(v.number())),
+    branches: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    // 1. Fetch the Top 200 global users (sorted by XP)
+    // We fetch more than 10 because we might filter many out.
+    // For a college app, filtering in memory is perfectly fine and fast.
+    const allTopUsers = await ctx.db
+      .query("users")
+      .withIndex("by_xp")
+      .order("desc")
+      .take(200);
+
+    // 2. Filter in Memory (The Logic)
+    const filtered = allTopUsers.filter((user) => {
+      // Check Year (if filter exists)
+      const matchesYear = 
+        !args.years || 
+        args.years.length === 0 || 
+        (user.collegeYear && args.years.includes(user.collegeYear));
+
+      // Check Branch (if filter exists)
+      const matchesBranch = 
+        !args.branches || 
+        args.branches.length === 0 || 
+        (user.branch && args.branches.includes(user.branch));
+
+      return matchesYear && matchesBranch;
+    });
+
+    // 3. Return Top 10 of the filtered list
+    return filtered.slice(0, 10);
+  },
+});
+export const searchUsers = query({
+  args: { searchTerm: v.string() },
+  handler: async (ctx, args) => {
+    if (!args.searchTerm) return [];
+
+    // Use the search index
     return await ctx.db
       .query("users")
-      .withIndex("by_xp")      // Matches schema name
-      .order("desc")           // Highest XP first
-      .take(10);              // Only get the top 10
+      .withSearchIndex("search_name", (q) => q.search("name", args.searchTerm))
+      .take(5); // Limit to top 5 matches
   },
+});
+export const updateProfileDetails = mutation({
+  args: {
+    branch: v.string(),
+    collegeYear: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+    
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+      
+    if (!user) throw new Error("User not found");
+    
+    await ctx.db.patch(user._id, {
+      branch: args.branch,
+      collegeYear: args.collegeYear,
+    });
+  }
 });
 export const addXP = mutation({
   args: {
@@ -170,5 +242,39 @@ export const markAsPremium = internalMutation({
     if (user) {
       await ctx.db.patch(user._id, { isPremium: true });
     }
+  },
+});
+export const updateAcademicDetails = mutation({
+  args: {
+    branch: v.string(),
+    collegeYear: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) throw new Error("User not found");
+
+    // 1. Get current count (default to 0)
+    const currentCount = user.profileUpdateCount || 0;
+
+    // 2. ENFORCE LIMIT: If they used 2 attempts, STOP THEM.
+    if (currentCount >= 2) {
+      throw new Error("Academic details are locked. You have used your edit attempts.");
+    }
+
+    // 3. Update fields and increment count
+    await ctx.db.patch(user._id, {
+      branch: args.branch,
+      collegeYear: args.collegeYear,
+      profileUpdateCount: currentCount + 1,
+    });
+
+    return "Profile updated successfully";
   },
 });
