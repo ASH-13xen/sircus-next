@@ -1,10 +1,34 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { getLevelFromXP, getRoleFromXP } from "./gameLogic";
 
 // Ideally, this should be consistent with your Clerk PROCTOR_EMAIL
 const PROCTOR_EMAIL = process.env.PROCTOR_EMAIL;
 
 // --- PROCTOR FUNCTIONS ---
+export const updateCode = mutation({
+  args: {
+    testId: v.id("tests"),
+    code: v.string(),
+    language: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Note: In a real app, you might want to debounce this or use checking
+    // to ensure only the candidate can type, but for now we allow both.
+    await ctx.db.patch(args.testId, {
+      currentCode: args.code,
+      language: args.language,
+    });
+  },
+});
+
+// Update the problem statement (Proctor only)
+export const setProblem = mutation({
+  args: { testId: v.id("tests"), problem: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.testId, { problemStatement: args.problem });
+  },
+});
 
 export const createTest = mutation({
   args: {
@@ -152,9 +176,15 @@ export const getUpcomingTests = query({
       })
     );
 
-    // Return tests that are in the future OR currently live
-    // (We want the user to see the "Enter Test" button if status is 'live')
-    return tests.filter((t) => t && (t.startTime > now || t.status === "live"));
+    // FIXED FILTER:
+    // 1. Must be in future OR live
+    // 2. AND must NOT be completed (even if time is in future)
+    return tests.filter(
+      (t) =>
+        t &&
+        (t.startTime > now || t.status === "live") &&
+        t.status !== "completed" // <--- THIS WAS MISSING
+    );
   },
 });
 
@@ -222,22 +252,57 @@ export const finalizeTestResult = mutation({
     if (!identity || identity.email !== PROCTOR_EMAIL)
       throw new Error("Unauthorized");
 
-    // 1. Mark test as completed
+    // 1. Fetch Test Data (to get maxPoints)
+    const test = await ctx.db.get(args.testId);
+    if (!test) throw new Error("Test not found");
+
+    // 2. Mark test as completed
     await ctx.db.patch(args.testId, {
       status: "completed",
     });
 
-    // 2. Update the registration with the score
+    // 3. Find the Registration to get the User ID
     const registration = await ctx.db
       .query("registrations")
       .withIndex("by_test", (q) => q.eq("testId", args.testId))
       .first();
 
-    if (registration) {
-      await ctx.db.patch(registration._id, {
-        score: args.score,
-        status: "completed",
+    if (!registration) throw new Error("No registration found for this test");
+
+    // 4. Update the Registration
+    await ctx.db.patch(registration._id, {
+      score: args.score,
+      status: "completed",
+    });
+
+    // --- GAME LOGIC START ---
+
+    // 5. Calculate XP Earned
+    // Formula: (Given / Total) * 1000
+    const ratio = args.score / test.maxPoints;
+    const xpEarned = Math.floor(ratio * 1000);
+
+    // 6. Fetch the User Profile
+    // Note: registration.userId stores the Clerk Subject ID.
+    // We need to find the user in your 'users' table using the index we defined.
+    const userProfile = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", registration.userId))
+      .first();
+
+    if (userProfile) {
+      const newTotalXP = (userProfile.currentXP || 0) + xpEarned;
+      const newLevel = getLevelFromXP(newTotalXP);
+      const newRole = getRoleFromXP(newTotalXP);
+
+      // 7. Update User Stats
+      await ctx.db.patch(userProfile._id, {
+        currentXP: newTotalXP,
+        currentLevel: newLevel,
+        role: newRole,
+        totalTests: (userProfile.totalTests || 0) + 1, // Increment total tests taken
       });
     }
+    // --- GAME LOGIC END ---
   },
 });
