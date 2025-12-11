@@ -1,5 +1,7 @@
-import { Calendar, Crown, Mail, ShieldCheck } from "lucide-react";
+import { Calendar, Crown, Mail, ShieldCheck, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SignOutButton } from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
 
 interface ProfileHeaderProps {
   name: string;
@@ -19,8 +21,22 @@ export default function ProfileHeader({
   isPremium = false,
 }: ProfileHeaderProps) {
   return (
-    <div className="flex flex-col md:flex-row items-center gap-8 mb-12 bg-[#0b1021] border border-slate-800 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+    <div className="flex flex-col md:flex-row items-center gap-8 mb-12 bg-[#0b1021] border border-slate-800 p-8 rounded-3xl shadow-2xl relative overflow-hidden group">
       
+      {/* --- SIGNOUT BUTTON (Absolute Top Right) --- */}
+      <div className="absolute top-6 right-6 z-20">
+        <SignOutButton>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all duration-300"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            <span className="font-medium">Sign Out</span>
+          </Button>
+        </SignOutButton>
+      </div>
+
       {/* Background Decor: Only visible for Premium users */}
       {isPremium && (
         <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-[80px] -z-0 pointer-events-none" />
@@ -72,7 +88,7 @@ export default function ProfileHeader({
         </div>
 
         {/* Contact / Meta Data */}
-        <div className="flex flex-col md:flex-row items-center gap-4 text-slate-400 text-sm mt-2">
+        <div className="flex flex-col md:flex-row items-center gap-4 text-slate-400 text-sm mt-2 justify-center md:justify-start">
             <div className="flex items-center gap-2 bg-slate-900/50 px-3 py-1.5 rounded-lg border border-slate-800/50">
                 <Mail className="w-3.5 h-3.5 text-blue-500" />
                 <span>{email}</span>

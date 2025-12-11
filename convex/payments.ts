@@ -6,29 +6,25 @@ import { internal } from "./_generated/api"; // Import 'internal' to call other 
 import Razorpay from "razorpay";
 import crypto from "crypto";
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
-
 export const createOrder = action({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+  args: { amount: v.number() },
+  handler: async (ctx, args) => {
+    const key_id = process.env.RAZORPAY_KEY_ID;
+    const key_secret = process.env.RAZORPAY_KEY_SECRET;
 
-    const amount = 49900; 
+    if (!key_id || !key_secret) {
+      throw new Error("Razorpay keys missing");
+    }
 
-    const options = {
-      amount: amount,
+    const razor = new Razorpay({ key_id, key_secret });
+
+    return await razor.orders.create({
+      amount: args.amount,
       currency: "INR",
-      receipt: `receipt_${Date.now()}`,
-    };
-
-    const order = await razorpay.orders.create(options);
-    return order.id;
+    });
   },
 });
+
 
 export const verifyPayment = action({
   args: {
