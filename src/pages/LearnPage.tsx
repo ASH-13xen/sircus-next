@@ -61,7 +61,7 @@ const LearnPage = () => {
   const userData = useQuery(api.users.getUserProfile);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8 font-sans selection:bg-blue-500 selection:text-white">
+    <div className="min-h-screen text-white p-8 font-sans selection:bg-blue-500 selection:text-white">
       
       {/* Header Section */}
       <div className="max-w-5xl mx-auto mb-12 pt-8">

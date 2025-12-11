@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ConvexClerkProvider from "@/providers/ConvexClerkProvider";
 import Navbar from "@/components/other/Navbar";
-
+import BackgroundGrid from "@/components/ui/BackgroundGrid";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -31,6 +31,7 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased  bg-black/90`}
         >
           <Navbar />
+          <BackgroundGrid />
           {children}
         </body>
       </html>
