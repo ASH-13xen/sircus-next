@@ -10,7 +10,7 @@ export default function BuyPremiumButton() {
 
   const handlePayment = async () => {
     // 1. Create Order
-    const orderId = await createOrder();
+    const order = await createOrder({});
 
     // 2. Open Razorpay Modal
     const options = {
@@ -19,7 +19,7 @@ export default function BuyPremiumButton() {
       currency: "INR",
       name: "SircuS Premium",
       description: "Lifetime access to Aptitude",
-      order_id: orderId,
+      order_id: order.id,
       handler: async function (response: any) {
         // 3. Verify Payment on Success
         try {
