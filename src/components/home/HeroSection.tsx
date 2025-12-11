@@ -1,10 +1,8 @@
 import * as React from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Terminal, Code2 } from "lucide-react"; // Swapped icons for tech theme
 import { LevelBadge } from "@/components/home/LevelBadge";
 import { SignInButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-
-const heroImage = "/images/homecircustent.jpg";
 
 interface HeroSectionProps {
   name: string;
@@ -12,6 +10,7 @@ interface HeroSectionProps {
   currentXP: number;
   role: string;
   isGuest?: boolean;
+  nextLevelXP?: number; // <--- Added this prop
 }
 
 export const HeroSection = ({
@@ -20,25 +19,29 @@ export const HeroSection = ({
   currentXP,
   role,
   isGuest = false,
+  nextLevelXP = 1000, // <--- Default value to prevent division by zero errors
 }: HeroSectionProps) => {
-  const xpForNextLevel = (level + 1) * 1000;
+  
+  // Removed the local "xpForNextLevel" calculation.
+  // We now rely on the prop passed from the parent (which uses your new gameLogic).
 
   return (
-    <div
-      className="relative py-20 overflow-hidden"
-      style={{
-        backgroundImage: `linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(14, 165, 233, 0.15)), linear-gradient(to bottom, rgba(2, 6, 23, 0.75), rgba(2, 6, 23, 0.9)), url(${heroImage})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div className="absolute inset-0 bg-linear-to-t from-background via-transparent to-transparent pointer-events-none" />
+    <div className="relative py-20 overflow-hidden bg-[#02040a]">
+      {/* --- BACKGROUND EFFECTS --- */}
+      {/* Subtle top gradient to mimic the 'glow' in the screenshot */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-blue-600/10 rounded-full blur-[100px] pointer-events-none" />
+      
+      {/* Optional Grid Pattern Overlay */}
+      <div 
+        className="absolute inset-0 opacity-20 pointer-events-none" 
+        style={{
+            backgroundImage: `radial-gradient(#1e293b 1px, transparent 1px)`,
+            backgroundSize: '32px 32px'
+        }}
+      />
+
       <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-5xl mx-auto">
-          {/* GRID LOGIC: 
-            - If Guest: Use flex and center everything (1 column look)
-            - If User: Use grid with 2 columns
-          */}
+        <div className="max-w-6xl mx-auto">
           <div
             className={
               isGuest
@@ -48,56 +51,73 @@ export const HeroSection = ({
           >
             {/* --- LEFT SIDE: TEXT --- */}
             <div
-              className={`space-y-6 ${isGuest ? "text-center" : "text-center lg:text-left"}`}
+              className={`space-y-8 ${isGuest ? "text-center" : "text-center lg:text-left"}`}
             >
+              {/* Level / Role Pill */}
               {!isGuest && (
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-sm">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium text-primary">
-                    Level {level} {role}
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/50 border border-slate-700 backdrop-blur-sm">
+                  <Terminal className="w-4 h-4 text-blue-400" />
+                  <span className="text-xs font-semibold tracking-wide uppercase text-blue-400">
+                    Level {level} • {role}
                   </span>
                 </div>
               )}
 
-              <h1 className="text-5xl lg:text-7xl font-display text-foreground leading-tight">
+              {/* Main Headline */}
+              <h1 className="text-5xl lg:text-7xl font-sans font-bold text-white tracking-tight leading-[1.1]">
                 {isGuest ? (
                   <span>
-                    Step into the <br />
-                    <span className="text-primary">Ring!</span>
+                    Master the <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+                      Future of Tech
+                    </span>
                   </span>
                 ) : (
                   <span>
                     Welcome back,
                     <br />
-                    <span className="text-primary">{name}</span>!
+                    <span className="text-blue-500">{name}</span>
                   </span>
                 )}
               </h1>
 
-              <p className="text-xl text-muted-foreground max-w-lg mx-auto lg:mx-0">
+              {/* Subheading Description */}
+              <p className="text-lg text-slate-400 leading-relaxed max-w-lg mx-auto lg:mx-0">
                 {isGuest
-                  ? "Join the greatest show on earth. Sign in to track your progress and master your skills."
-                  : "Your journey to becoming a Ringmaster continues. Keep mastering skills and earning XP at the Big Top!"}
+                  ? "Select a domain to start your journey. From Data Structures to AI, our paths are curated to take you from beginner to advanced."
+                  : "Your learning path continues. Keep building projects and earning XP to unlock advanced system designs."}
               </p>
 
+              {/* CTA Buttons */}
               {isGuest && (
-                <div className="pt-4">
+                <div className="pt-2 flex flex-col sm:flex-row gap-4 justify-center">
                   <SignInButton mode="modal">
-                    <Button size="lg" className="text-lg px-8">
-                      Start Your Journey
+                    <Button 
+                        size="lg" 
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-base px-8 h-12 rounded-xl transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_25px_rgba(59,130,246,0.5)]"
+                    >
+                      Start Learning <span className="ml-2">→</span>
                     </Button>
                   </SignInButton>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 h-12 rounded-xl px-8"
+                  >
+                    View Curriculum
+                  </Button>
                 </div>
               )}
             </div>
 
-            {/* --- RIGHT SIDE: BADGE (ONLY IF SIGNED IN) --- */}
+            {/* --- RIGHT SIDE: BADGE / VISUAL (ONLY IF SIGNED IN) --- */}
             {!isGuest && (
               <div className="flex justify-center">
                 <LevelBadge
                   level={level}
                   currentXP={currentXP}
-                  xpForNextLevel={xpForNextLevel}
+                  xpForNextLevel={nextLevelXP} // <--- Pass the new prop here
                   levelName={role}
                 />
               </div>

@@ -14,8 +14,15 @@ export default defineSchema({
     totalTests: v.number(),
     totalProjects: v.number(),
     totalCertifications: v.number(),
-  }).index("by_clerk_id", ["clerkId"]),
-
+    isPremium: v.optional(v.boolean()),
+    branch: v.optional(v.string()), // e.g., "CSE", "ECE", "DSAI"
+    collegeYear: v.optional(v.number()),
+    profileUpdateCount: v.optional(v.number()),
+  })
+    .index("by_clerk_id", ["clerkId"])
+    .index("by_xp", ["currentXP"])
+    .index("by_year_xp", ["collegeYear", "currentXP"])
+    .searchIndex("search_name", { searchField: "name" }),
   tests: defineTable({
     title: v.string(),
     domain: v.string(),

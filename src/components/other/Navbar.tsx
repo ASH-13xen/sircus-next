@@ -30,6 +30,7 @@ export default function Navbar() {
     { path: "/training", label: "Training" },
     { path: "/test", label: "Tests" },
     { path: "/projects", label: "Projects" },
+    { path: "/leaderboard", label: "Leaderboard" },
   ];
 
   return (

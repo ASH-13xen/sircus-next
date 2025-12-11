@@ -1,5 +1,12 @@
-const Training = () => {
-  return <div>training page</div>;
-};
+import React from 'react'
+import Training from '@/pages/Training';
 
-export default Training;
+const page = () => {
+  return (
+    <div>
+      <Training/>
+    </div>
+  )
+}
+
+export default page
