@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; // Assuming you have this, otherwise standard input works
 import { 
   Github, 
   ExternalLink, 
@@ -29,7 +28,7 @@ interface Project {
   links: {
     demo?: string;
     repo?: string;
-    youtube?: string; // Added specific youtube link field
+    youtube?: string; 
   };
 }
 
@@ -45,15 +44,6 @@ const initialProjects: Project[] = [
     video: "https://www.w3schools.com/html/mov_bbb.mp4",
     links: { demo: "https://example.com", repo: "https://github.com" },
   },
-  {
-    id: "2",
-    title: "CryptoWatch Dashboard",
-    about: "Real-time cryptocurrency tracking dashboard featuring live websocket connections for price updates.",
-    tech: ["React", "Next.js", "Tailwind CSS", "WebSockets"],
-    thumbnail: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1000&auto=format&fit=crop",
-    screenshots: [],
-    links: { repo: "https://github.com" },
-  },
 ];
 
 export default function ProjectsPage() {
@@ -63,58 +53,62 @@ export default function ProjectsPage() {
   // Form State
   const [formData, setFormData] = useState({
     title: "",
+    about: "", // NEW FIELD
     tech: "",
     github: "",
-    youtube: ""
+    youtube: "",
+    screenshots: ""
   });
 
-  // Handle Delete
   const handleDelete = (id: string) => {
     setProjects(projects.filter((p) => p.id !== id));
   };
 
-  // Handle Input Change
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Updated type to handle textarea as well
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle Form Submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Process comma separated strings
+    const techArray = formData.tech.split(",").map(t => t.trim()).filter(t => t);
+    const screenshotArray = formData.screenshots.split(",").map(s => s.trim()).filter(s => s);
 
     const newProject: Project = {
       id: Date.now().toString(),
       title: formData.title,
-      about: "User submitted project description placeholder.", // Simplified for this demo
-      tech: formData.tech.split(",").map(t => t.trim()).filter(t => t), // Split CSV to array
-      thumbnail: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1000", // Default placeholder
-      screenshots: [],
+      about: formData.about, // User input
+      tech: techArray,
+      // Use first screenshot as thumbnail, or a default placeholder
+      thumbnail: screenshotArray.length > 0 ? screenshotArray[0] : "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1000",
+      screenshots: screenshotArray,
       links: {
         repo: formData.github,
-        youtube: formData.youtube
+        youtube: formData.youtube 
       }
     };
 
     setProjects([newProject, ...projects]);
-    setFormData({ title: "", tech: "", github: "", youtube: "" });
+    
+    // Reset form
+    setFormData({ title: "", about: "", tech: "", github: "", youtube: "", screenshots: "" });
     setIsModalOpen(false);
   };
 
   return (
     <div className="min-h-screen bg-[#02040a] relative isolate pb-20">
-      {/* Background Effects */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-900/20 rounded-full blur-[100px] -z-10" />
       <div 
         className="absolute inset-0 opacity-10 pointer-events-none -z-10" 
         style={{ backgroundImage: `radial-gradient(#3b82f6 1px, transparent 1px)`, backgroundSize: '32px 32px' }}
       />
 
-      {/* --- HEADER & CONTROLS --- */}
+      {/* --- HEADER --- */}
       <div className="container mx-auto px-4 pt-10 pb-12">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-          
-          {/* Titles */}
           <div className="text-left">
             <h1 className="text-3xl font-bold text-white tracking-tight">
               Project <span className="text-blue-500">Hub</span>
@@ -122,9 +116,7 @@ export default function ProjectsPage() {
             <p className="text-slate-400 text-sm mt-1">Manage and showcase your work</p>
           </div>
 
-          {/* Search & Add Actions */}
           <div className="flex items-center gap-4 w-full md:w-auto">
-            {/* User Search Bar */}
             <div className="relative group w-full md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" size={16} />
                 <input 
@@ -133,8 +125,6 @@ export default function ProjectsPage() {
                   className="w-full bg-[#0b1021] border border-slate-800 text-slate-200 text-sm rounded-full pl-10 pr-4 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-600"
                 />
             </div>
-
-            {/* Add Button */}
             <Button onClick={() => setIsModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
               <Plus size={18} /> Add Project
             </Button>
@@ -158,7 +148,7 @@ export default function ProjectsPage() {
       {/* --- ADD PROJECT MODAL --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#0b1021] border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+          <div className="bg-[#0b1021] border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button 
               onClick={() => setIsModalOpen(false)} 
               className="absolute top-4 right-4 text-slate-400 hover:text-white"
@@ -169,6 +159,7 @@ export default function ProjectsPage() {
             <h2 className="text-xl font-bold text-white mb-6">Add New Project</h2>
             
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Title */}
               <div className="space-y-2">
                 <label className="text-xs font-medium text-slate-400 uppercase">Project Title</label>
                 <input 
@@ -181,18 +172,47 @@ export default function ProjectsPage() {
                 />
               </div>
 
+              {/* NEW DESCRIPTION FIELD */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-slate-400 uppercase">Technologies Used</label>
+                <label className="text-xs font-medium text-slate-400 uppercase">Description</label>
+                <textarea 
+                  required
+                  name="about"
+                  value={formData.about}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none resize-none"
+                  placeholder="Briefly describe what this project does..."
+                />
+              </div>
+
+              {/* Technologies */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-400 uppercase">Technologies (comma separated)</label>
                 <input 
                   required
                   name="tech"
                   value={formData.tech}
                   onChange={handleInputChange}
                   className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none"
-                  placeholder="e.g. React, Node.js, MongoDB (comma separated)"
+                  placeholder="React, Node.js, MongoDB"
                 />
               </div>
 
+              {/* Screenshots */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-400 uppercase">Screenshots (Image URLs)</label>
+                <input 
+                  name="screenshots"
+                  value={formData.screenshots}
+                  onChange={handleInputChange}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none"
+                  placeholder="https://img1.com, https://img2.com..."
+                />
+                <p className="text-[10px] text-slate-500">Separate multiple URLs with commas</p>
+              </div>
+
+              {/* Links */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-slate-400 uppercase">GitHub Link</label>
@@ -205,7 +225,7 @@ export default function ProjectsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-slate-400 uppercase">YouTube Link</label>
+                  <label className="text-xs font-medium text-slate-400 uppercase">YouTube Link <span className="text-slate-600 normal-case">(Optional)</span></label>
                   <input 
                     name="youtube"
                     value={formData.youtube}
@@ -229,12 +249,24 @@ export default function ProjectsPage() {
 
 // --- PROJECT CARD COMPONENT ---
 function ProjectCard({ project, onDelete }: { project: Project, onDelete: (id: string) => void }) {
-  const [activeMedia, setActiveMedia] = useState<"video" | "image">("image");
+  const [activeMedia, setActiveMedia] = useState<"video" | "image" | string>("image");
+
+  // Determine what to display in the main window
+  const getMainMedia = () => {
+    if (activeMedia === "video" && project.video) {
+        return <video src={project.video} controls className="w-full h-full object-cover" poster={project.thumbnail} />;
+    }
+    // If activeMedia is a string URL (screenshot), show that
+    if (typeof activeMedia === "string" && activeMedia !== "video" && activeMedia !== "image") {
+        return <img src={activeMedia} alt="screenshot" className="w-full h-full object-cover" />;
+    }
+    // Default to thumbnail
+    return <img src={project.thumbnail} alt={project.title} className="w-full h-full object-cover opacity-90" />;
+  };
 
   return (
     <div className="bg-[#0b1021] border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition-colors duration-300 shadow-2xl flex flex-col lg:flex-row group relative">
       
-      {/* DELETE BUTTON (Top Right) */}
       <button 
         onClick={() => onDelete(project.id)}
         className="absolute top-4 right-4 z-10 bg-red-500/10 hover:bg-red-500/90 text-red-500 hover:text-white p-2 rounded-full border border-red-500/50 transition-all opacity-0 group-hover:opacity-100"
@@ -246,19 +278,15 @@ function ProjectCard({ project, onDelete }: { project: Project, onDelete: (id: s
       {/* --- LEFT: MEDIA SECTION --- */}
       <div className="w-full lg:w-2/5 bg-black/50 border-b lg:border-b-0 lg:border-r border-slate-800 relative">
         <div className="aspect-video relative overflow-hidden flex items-center justify-center bg-slate-900">
-          {/* Display logic: if standard video is present show it, otherwise show img */}
-          {project.video && activeMedia === "video" ? (
-             <video src={project.video} controls className="w-full h-full object-cover" poster={project.thumbnail} />
-          ) : (
-             <img src={project.thumbnail} alt={project.title} className="w-full h-full object-cover opacity-90" />
-          )}
+          
+          {getMainMedia()}
 
           <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white flex items-center gap-2 border border-white/10">
             {project.video && activeMedia === "video" ? "Playing Demo" : "Preview"}
           </div>
         </div>
 
-        {/* Media Controls */}
+        {/* Media Controls / Thumbnails */}
         <div className="p-4 grid grid-cols-4 gap-2">
            {/* Standard Video Toggle */}
            {project.video && (
@@ -269,7 +297,19 @@ function ProjectCard({ project, onDelete }: { project: Project, onDelete: (id: s
                 <PlayCircle size={20} /> <span className="text-[10px] uppercase font-bold">Video</span>
              </button>
            )}
-           {/* YouTube Link Button (opens in new tab as standard video element doesn't play YT) */}
+
+           {/* Screenshot Toggles */}
+           {project.screenshots.map((shot, i) => (
+             <button
+                key={i}
+                onClick={() => setActiveMedia(shot)}
+                className={`col-span-1 aspect-video rounded-lg border overflow-hidden relative ${activeMedia === shot ? "border-blue-500 ring-1 ring-blue-500" : "border-slate-700 opacity-70 hover:opacity-100"}`}
+             >
+                <img src={shot} alt="thumb" className="w-full h-full object-cover" />
+             </button>
+           ))}
+
+           {/* YouTube Link Button */}
            {project.links.youtube && (
               <a 
                 href={project.links.youtube}
