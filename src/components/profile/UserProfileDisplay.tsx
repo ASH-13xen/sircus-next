@@ -10,6 +10,8 @@ import { getRoleFromXP, getLevelFromXP, getNextLevelXP } from "../../../convex/g
 import { AlertTriangle, Lock, Edit2, Check, X } from "lucide-react";
 import { toast } from "sonner"; // Assuming you have a toast library, or use alert()
 import UserSearch from "./UserSearch";
+import ResumeUpload from "./ResumeUpload";
+import TranscriptUpload from "./TranscriptUpload";
 // Props: accept userData and a flag to know if this is MY profile
 export default function UserProfileDisplay({ 
   userData, 
@@ -65,6 +67,16 @@ export default function UserProfileDisplay({
               joinDate={userData._creationTime}
               isPremium={userData.isPremium}
             />
+            <div className="flex flex-wrap items-center justify-end gap-4 mt-6 px-4 sm:px-0">
+                <ResumeUpload 
+                resumeUrl={userData.resumeUrl} // Ensure backend returns this!
+                isOwner={isOwner} 
+                />
+                <TranscriptUpload 
+                    transcriptUrl={userData.transcriptUrl} // Make sure query returns this!
+                    isOwner={isOwner} 
+                />
+            </div>
             <div className="mt-8">
               <LevelProgress
                 currentLevel={displayLevel}
@@ -85,6 +97,8 @@ export default function UserProfileDisplay({
             totalTests={userData.totalTests || 0}
             totalProjects={userData.totalProjects || 0}
             totalCertifications={userData.totalCertifications || 0}
+            userId={userData._id} 
+            isOwner={isOwner}
           />
           
           {/* --- ACADEMIC DETAILS CARD --- */}
