@@ -359,7 +359,7 @@ export default function TrainingPage() {
 
   // --- VIEW 1: SUBJECT DASHBOARD ---
   return (
-    <div className="min-h-screen bg-[#02040a] text-slate-200 p-8 pb-20">
+    <div className="min-h-screen text-slate-200 p-8 pb-20">
       
       {/* Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-900/20 rounded-full blur-[120px] pointer-events-none" />

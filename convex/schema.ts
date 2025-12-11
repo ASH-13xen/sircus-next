@@ -18,11 +18,36 @@ export default defineSchema({
     branch: v.optional(v.string()), // e.g., "CSE", "ECE", "DSAI"
     collegeYear: v.optional(v.number()),
     profileUpdateCount: v.optional(v.number()),
+    resumeStorageId: v.optional(v.id("_storage")),
+    transcriptStorageId: v.optional(v.id("_storage")),
   })
     .index("by_clerk_id", ["clerkId"])
     .index("by_xp", ["currentXP"])
     .index("by_year_xp", ["collegeYear", "currentXP"])
     .searchIndex("search_name", { searchField: "name" }),
+  certificates: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    issuer: v.string(), // e.g., "Coursera", "Udemy"
+    issueDate: v.string(),
+    certificateLink: v.string(),
+  }).index("by_user", ["userId"]),
+
+  // 2. PROJECTS TABLE
+  projects: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    description: v.string(),
+    techStack: v.string(), // e.g. "React, Convex, Tailwind"
+    githubLink: v.optional(v.string()),
+    youtubeLink: v.optional(v.string()), // New
+    imageUrls: v.optional(v.string()),   // New (Comma separated string)
+    liveLink: v.optional(v.string()),
+  }).index("by_user", ["userId"])
+  .searchIndex("search_projects", { 
+    searchField: "title", 
+    filterFields: ["userId"] 
+  }),
   tests: defineTable({
     title: v.string(),
     domain: v.string(),

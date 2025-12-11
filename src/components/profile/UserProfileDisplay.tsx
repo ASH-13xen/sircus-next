@@ -10,6 +10,10 @@ import { getRoleFromXP, getLevelFromXP, getNextLevelXP } from "../../../convex/g
 import { AlertTriangle, Lock, Edit2, Check, X } from "lucide-react";
 import { toast } from "sonner"; // Assuming you have a toast library, or use alert()
 import UserSearch from "./UserSearch";
+import ResumeUpload from "./ResumeUpload";
+import TranscriptUpload from "./TranscriptUpload";
+import { SignOutButton } from "@clerk/nextjs";
+import { LogOut } from "lucide-react";
 // Props: accept userData and a flag to know if this is MY profile
 export default function UserProfileDisplay({ 
   userData, 
@@ -53,8 +57,16 @@ export default function UserProfileDisplay({
       <div className="bg-gradient-to-b from-[#0b1021] to-[#020617] py-12 border-b border-slate-800/50">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
-            <div className="flex justify-end mb-8">
+            <div className="flex justify-end mb-8 gap-4">
                <UserSearch />
+               {isOwner && (
+                   <SignOutButton redirectUrl="/">
+                     <button className="flex items-center gap-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-600/20 px-4 py-2 rounded-full font-medium transition-all">
+                       <LogOut className="w-4 h-4" />
+                       <span>Sign Out</span>
+                     </button>
+                   </SignOutButton>
+                 )}
             </div>
 
             <ProfileHeader
@@ -65,6 +77,16 @@ export default function UserProfileDisplay({
               joinDate={userData._creationTime}
               isPremium={userData.isPremium}
             />
+            <div className="flex flex-wrap items-center justify-end gap-4 mt-6 px-4 sm:px-0">
+                <ResumeUpload 
+                resumeUrl={userData.resumeUrl} // Ensure backend returns this!
+                isOwner={isOwner} 
+                />
+                <TranscriptUpload 
+                    transcriptUrl={userData.transcriptUrl} // Make sure query returns this!
+                    isOwner={isOwner} 
+                />
+            </div>
             <div className="mt-8">
               <LevelProgress
                 currentLevel={displayLevel}
@@ -85,6 +107,8 @@ export default function UserProfileDisplay({
             totalTests={userData.totalTests || 0}
             totalProjects={userData.totalProjects || 0}
             totalCertifications={userData.totalCertifications || 0}
+            userId={userData._id} 
+            isOwner={isOwner}
           />
           
           {/* --- ACADEMIC DETAILS CARD --- */}
