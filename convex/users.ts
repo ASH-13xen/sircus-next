@@ -119,3 +119,13 @@ export const updateUser = mutation({
     });
   },
 });
+export const getLeaderboard = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_xp")      // Matches schema name
+      .order("desc")           // Highest XP first
+      .take(10);              // Only get the top 10
+  },
+});
