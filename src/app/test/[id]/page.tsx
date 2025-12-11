@@ -5,15 +5,20 @@ import TestHeader from "@/components/test/TestHeader";
 import TestWorkspace from "@/components/test/TestWorkspace";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { useParams } from "next/navigation";
+import { useParams } from "next/navigation"; // Import is correct
 import { useState, useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 
 function TestPage() {
-  const { id } = useParams();
+  // FIX 1: Type assertion tells TypeScript that 'id' exists and is a string
+  const { id } = useParams() as { id: string };
+
+  // FIX 2: Since you are using MOCK DATA, 'id' is currently unused.
+  // Log it to the console or suppress the warning so the build passes.
+  console.log("Current Test ID:", id);
 
   // 1. Fetch the specific Test/Assessment details
-  // const testData = useQuery(api.tests.getTestById, { id });
+  //const testData = useQuery(api.tests.getTestById, { id });
 
   // MOCK DATA for now
   const testData = {

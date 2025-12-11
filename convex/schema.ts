@@ -58,6 +58,9 @@ export default defineSchema({
     createdBy: v.string(),
     status: v.optional(v.string()),
     meetingId: v.optional(v.string()),
+    problemStatement: v.optional(v.string()),
+    currentCode: v.optional(v.string()),
+    language: v.optional(v.string()),
   }).index("by_creator", ["createdBy"]),
 
   interviews: defineTable({

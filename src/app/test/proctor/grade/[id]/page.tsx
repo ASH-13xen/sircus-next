@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 
 export default function GradePage() {
-  const { id } = useParams();
+  const { id } = useParams() as { id: string };
   const router = useRouter();
   const [score, setScore] = useState("");
 

@@ -1,21 +1,28 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useQuery, useMutation, useAction } from "convex/react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQuery, useMutation, useAction } from "convex/react";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
+import {
+  Loader2,
+  Video,
+  ShieldAlert,
+  Trophy,
+  CheckCircle2,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input"; // Ensure you have this or use standard <input>
+
+import CodeEditor from "@/components/test/CodeEditor";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
-import { useUser } from "@clerk/nextjs";
-import { Loader2, Video } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { useState, useEffect } from "react";
-
-// --- STREAM IMPORTS ---
 import {
   StreamVideo,
   StreamVideoClient,
@@ -32,29 +39,38 @@ export default function InterviewRoomPage() {
   const { user, isLoaded } = useUser();
   const testId = params?.id as Id<"tests">;
 
-  // Data Fetching
-  const test = useQuery(api.tests.getTestById, { testId });
+  // Data
+  const test = useQuery(api.tests.getTestById, testId ? { testId } : "skip");
   const updateStatus = useMutation(api.tests.updateTestStatus);
+  const finalizeResult = useMutation(api.tests.finalizeTestResult); // <--- Use the new mutation
   const generateToken = useAction(api.stream.generateStreamToken);
 
   const proctorEmail = process.env.NEXT_PUBLIC_PROCTOR_EMAIL;
   const isProctor =
     isLoaded && user?.primaryEmailAddress?.emailAddress === proctorEmail;
 
-  // --- STREAM STATE ---
+  // Stream State
   const [client, setClient] = useState<StreamVideoClient | null>(null);
   const [call, setCall] = useState<any>(null);
   const [isJoined, setIsJoined] = useState(false);
 
-  // 1. Initialize Stream Client
+  // --- SCORING MODAL STATE ---
+  const [showScoreModal, setShowScoreModal] = useState(false);
+  const [scoreInput, setScoreInput] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ... (Keep existing useEffects for Stream Init, Call Object, and Anti-Cheat) ...
+  // Re-paste them here if you need the full file, otherwise keep your existing ones.
+  // For brevity, I am assuming the previous useEffects are here.
+
+  // --- KEEP THESE USE EFFECTS FROM PREVIOUS CODE ---
   useEffect(() => {
     if (!user || !isLoaded) return;
-
     const initClient = async () => {
+      /* ... existing code ... */
       try {
         const token = await generateToken();
         const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY!;
-
         const videoClient = new StreamVideoClient({
           apiKey,
           user: {
@@ -66,75 +82,89 @@ export default function InterviewRoomPage() {
         });
         setClient(videoClient);
       } catch (err) {
-        console.error("Failed to init stream", err);
+        console.error(err);
       }
     };
-
     initClient();
   }, [user, isLoaded, generateToken]);
 
-  // 2. Setup the Call Object (but don't join yet)
   useEffect(() => {
-    if (!client || !test) return;
-
-    // Use testId as the unique call ID
+    if (!client || !testId) return;
     const myCall = client.call("default", testId);
     setCall(myCall);
-  }, [client, test, testId]);
+  }, [client, testId]);
+
+  useEffect(() => {
+    if (isProctor || !test || test.status !== "live") return;
+    const handleVisibilityChange = () => {
+      if (document.hidden) toast.error("Tab switching detected!");
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [test?.status, isProctor]);
+  // ------------------------------------------------
 
   // --- HANDLERS ---
+
   const handleJoinCall = async () => {
     if (!call) return;
-    try {
-      await call.join({ create: true });
-      setIsJoined(true);
-    } catch (err) {
-      toast.error("Failed to join call");
-      console.error(err);
-    }
+    await call.join({ create: true });
+    setIsJoined(true);
   };
 
   const handleStartTest = async () => {
-    try {
-      await updateStatus({ testId, status: "live" });
-      toast.success("Test is now LIVE");
-    } catch (err) {
-      toast.error("Failed to start test");
-    }
+    await updateStatus({ testId, status: "live" });
+    toast.success("Session is now LIVE");
   };
 
-  const handleEndTest = async () => {
+  // 1. Trigger the Modal instead of ending immediately
+  const handleEndTestClick = () => {
+    setShowScoreModal(true);
+  };
+
+  // 2. Submit Score and Calculate XP
+  const handleSubmitScore = async () => {
+    const score = parseFloat(scoreInput);
+    if (isNaN(score) || score < 0 || score > (test?.maxPoints || 100)) {
+      toast.error(
+        `Please enter a valid score between 0 and ${test?.maxPoints}`
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      await updateStatus({ testId, status: "completed" });
-      toast.success("Test marked as COMPLETED");
+      await finalizeResult({ testId, score });
+      toast.success("Session Ended. XP Awarded!");
+      setShowScoreModal(false);
       router.push("/test");
     } catch (err) {
-      toast.error("Failed to end test");
+      toast.error("Failed to finalize results");
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // --- LOADING / ERROR STATES ---
-  if (test === undefined || !client || !call) {
+  if (!testId || test === undefined || !client || !call) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="animate-spin" />
       </div>
     );
   }
-
   if (test === null) return <div>Test Not Found</div>;
-
   if (!isProctor && !test.isRegistered) return <div>Access Denied</div>;
 
-  // --- RENDER ---
   return (
     <StreamVideo client={client}>
-      <div className="container mx-auto p-4 lg:p-8 min-h-screen flex flex-col gap-6">
+      <div className="container mx-auto p-4 lg:p-6 min-h-screen flex flex-col gap-4 relative">
         {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">
+              <h1 className="text-2xl font-bold tracking-tight">
                 {test.title}
               </h1>
               <Badge
@@ -143,8 +173,9 @@ export default function InterviewRoomPage() {
                 {test.status?.toUpperCase() || "SCHEDULED"}
               </Badge>
             </div>
-            <p className="text-muted-foreground mt-1">
-              Topic: {test.topic} • Duration: {test.durationMinutes} mins
+            <p className="text-muted-foreground text-sm mt-1">
+              Max Points: {test.maxPoints} • Duration: {test.durationMinutes}{" "}
+              mins
             </p>
           </div>
 
@@ -160,79 +191,136 @@ export default function InterviewRoomPage() {
                 </Button>
               )}
               {test.status !== "completed" && (
-                <Button onClick={handleEndTest} variant="destructive">
-                  End Session
+                <Button onClick={handleEndTestClick} variant="destructive">
+                  End Session & Grade
                 </Button>
               )}
             </div>
           )}
         </div>
 
-        {/* MAIN VIDEO AREA */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
-          <Card className="lg:col-span-2 flex flex-col bg-slate-950 border-slate-800 overflow-hidden">
-            <CardContent className="flex-1 p-0 flex flex-col">
-              {/* SCENARIO 1: LIVE AND JOINED */}
+        {/* MAIN CONTENT (Split Screen) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-[600px]">
+          {/* VIDEO CARD */}
+          <Card className="flex flex-col bg-slate-950 border-slate-800 overflow-hidden h-full rounded-xl">
+            <CardContent className="flex-1 p-0 flex flex-col relative">
               {isJoined ? (
                 <StreamTheme className="h-full w-full">
                   <StreamCall call={call}>
-                    <div className="h-[500px] w-full flex flex-col">
+                    <div className="h-full w-full flex flex-col">
                       <SpeakerLayout />
-                      <CallControls onLeave={() => setIsJoined(false)} />
+                      <div className="absolute bottom-4 left-0 right-0 flex justify-center z-10">
+                        <CallControls onLeave={() => setIsJoined(false)} />
+                      </div>
                     </div>
                   </StreamCall>
                 </StreamTheme>
               ) : (
-                /* SCENARIO 2: WAITING OR NOT JOINED YET */
-                <div className="flex-1 flex items-center justify-center min-h-[400px]">
+                <div className="flex-1 flex flex-col items-center justify-center space-y-4 p-8">
                   {test.status === "scheduled" ? (
-                    <div className="text-center space-y-4 p-8">
+                    <div className="text-center space-y-4">
                       <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto">
-                        <Video className="w-8 h-8 text-slate-400" />
+                        <Video className="text-slate-400" />
                       </div>
-                      <h3 className="text-xl font-semibold text-white">
+                      <h3 className="text-white font-semibold">
                         Waiting for Host
                       </h3>
-                      <p className="text-slate-400">
-                        The proctor has not started the session.
-                      </p>
                     </div>
                   ) : test.status === "live" ? (
                     <div className="text-center space-y-4">
-                      <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto border-2 border-green-500">
-                        <Video className="w-10 h-10 text-green-500" />
+                      <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center border-2 border-green-500 animate-pulse mx-auto">
+                        <Video className="text-green-500" />
                       </div>
-                      <h3 className="text-xl font-semibold text-white">
-                        Live Session Active
-                      </h3>
                       <Button
                         onClick={handleJoinCall}
-                        className="mt-4 bg-green-600 hover:bg-green-700"
+                        className="bg-green-600 hover:bg-green-700"
                       >
                         Join Video Call
                       </Button>
                     </div>
                   ) : (
-                    <div className="text-center text-white">Session Ended</div>
+                    <div className="text-white">Session Ended</div>
                   )}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* SIDEBAR */}
-          <Card className="flex flex-col h-full">
-            <CardHeader>
-              <CardTitle>Session Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* Keep your existing sidebar content here */}
-              <p className="text-muted-foreground text-sm">
-                Participant: {user?.fullName}
-              </p>
-            </CardContent>
-          </Card>
+          {/* EDITOR CARD */}
+          <div className="h-full flex flex-col">
+            {test.status === "live" ||
+            test.status === "completed" ||
+            isProctor ? (
+              <CodeEditor testId={testId} isProctor={!!isProctor} />
+            ) : (
+              <Card className="h-full flex items-center justify-center p-6 text-center bg-muted/20">
+                <div>
+                  <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-xl font-bold">Locked</h3>
+                  <p className="text-muted-foreground">
+                    Waiting for proctor to start.
+                  </p>
+                </div>
+              </Card>
+            )}
+          </div>
         </div>
+
+        {/* --- SCORING MODAL OVERLAY --- */}
+        {showScoreModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+            <div className="bg-background border border-border p-6 rounded-lg shadow-lg w-full max-w-md space-y-4 animate-in fade-in zoom-in duration-200">
+              <div className="flex items-center gap-2 text-primary">
+                <Trophy className="w-6 h-6" />
+                <h2 className="text-xl font-bold">Finalize Results</h2>
+              </div>
+
+              <p className="text-muted-foreground text-sm">
+                Enter the marks awarded to the candidate. This will calculate
+                their XP, update their Level, and end the session.
+              </p>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Marks (Out of {test.maxPoints})
+                </label>
+                <Input
+                  type="number"
+                  placeholder="e.g. 85"
+                  value={scoreInput}
+                  onChange={(e) => setScoreInput(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowScoreModal(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSubmitScore}
+                  disabled={isSubmitting}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 mr-2" /> Submit & End
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </StreamVideo>
   );
