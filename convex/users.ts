@@ -1,5 +1,6 @@
 // user.ts
 import { mutation, query } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getRoleFromXP, getLevelFromXP } from "./gameLogic";
 // Default stats for new users
@@ -154,5 +155,20 @@ export const addXP = mutation({
     });
     
     return `Gained ${args.xpToAdd} XP! You are now a ${newRole}.`;
+  },
+});
+
+//premium mutation
+export const markAsPremium = internalMutation({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (user) {
+      await ctx.db.patch(user._id, { isPremium: true });
+    }
   },
 });

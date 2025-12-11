@@ -7,12 +7,21 @@ import { useUser, SignInButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Loader2, LogIn } from "lucide-react";
 
-import StatsProfile from "@/components/profile/StatsProfile";
+// Import your Game Logic Helper
+import { 
+  getRoleFromXP, 
+  getLevelFromXP, 
+  getNextLevelXP 
+} from "../../convex/gameLogic";
+
+import StatsProfile from "@/components/profile/StatsProfile"; 
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import LevelProgress from "@/components/profile/LevelProgress";
 
 export default function Profile() {
   const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
+  
+  // NOTE: Ensure your convex query supports fetching isPremium
   const userData = useQuery(api.users.getUserProfile);
   const storeUser = useMutation(api.users.storeUser);
 
@@ -55,7 +64,7 @@ export default function Profile() {
             </div>
             
             <SignInButton mode="modal">
-                <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium">
+                <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-[0_0_15px_rgba(37,99,235,0.5)]">
                     Sign In / Sign Up
                 </Button>
             </SignInButton>
@@ -70,19 +79,21 @@ export default function Profile() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#02040a] gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
         <p className="text-slate-400 font-medium animate-pulse">
-          Synchronizing profile data...
+            Synchronizing profile data...
         </p>
       </div>
     );
   }
 
+  // --- CALCULATE REAL-TIME STATS ---
+  const displayLevel = getLevelFromXP(userData.currentXP);
+  const displayRole = getRoleFromXP(userData.currentXP);
+  const nextLevelGoal = getNextLevelXP(userData.currentXP);
+
   // --- MAIN CONTENT ---
   return (
     <div className="min-h-screen bg-[#02040a] relative isolate">
-      {/* BACKGROUND EFFECTS 
-         1. Top Center Glow
-         2. Grid Pattern Overlay
-      */}
+      {/* BACKGROUND EFFECTS */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-900/20 rounded-full blur-[100px] -z-10" />
       <div 
         className="absolute inset-0 opacity-10 pointer-events-none -z-10" 
@@ -92,32 +103,36 @@ export default function Profile() {
         }}
       />
 
-      {/* Top Section: Header & Progress */}
+      {/* Top Section */}
       <div className="pt-12 pb-6 border-b border-slate-800/50">
         <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto space-y-8">
-            {/* 1. Header Component */}
+          <div className="max-w-5xl mx-auto">
+            
+            {/* 1. Header: Now receives isPremium and dynamic Role */}
             <ProfileHeader
               name={userData.name}
               email={userData.email}
               image={userData.image}
-              role={userData.role}
+              role={displayRole}  
               joinDate={userData._creationTime}
+              isPremium={userData.isPremium} 
             />
 
-            {/* 2. Level Progress Component */}
-            <LevelProgress
-              currentLevel={userData.currentLevel}
-              currentXP={userData.currentXP}
-            />
+            {/* 2. Progress: Added top margin for separation */}
+            <div className="mt-8">
+                <LevelProgress
+                currentLevel={displayLevel}
+                currentXP={userData.currentXP}
+                nextLevelXP={nextLevelGoal}
+                />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Bottom Section: Stats */}
       <div className="container mx-auto px-4 py-12">
-        <div className="max-w-5xl mx-auto space-y-8">
-          {/* 3. Stats Component */}
+        <div className="max-w-5xl mx-auto">
           <StatsProfile
             totalSkills={userData.totalSkills}
             totalTests={userData.totalTests}
