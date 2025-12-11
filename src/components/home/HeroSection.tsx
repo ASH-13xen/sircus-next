@@ -12,6 +12,7 @@ interface HeroSectionProps {
   currentXP: number;
   role: string;
   isGuest?: boolean;
+  nextLevelXP?: number; // <--- Added this prop
 }
 
 export const HeroSection = ({
@@ -20,8 +21,11 @@ export const HeroSection = ({
   currentXP,
   role,
   isGuest = false,
+  nextLevelXP = 1000, // <--- Default value to prevent division by zero errors
 }: HeroSectionProps) => {
-  const xpForNextLevel = (level + 1) * 1000;
+  
+  // Removed the local "xpForNextLevel" calculation.
+  // We now rely on the prop passed from the parent (which uses your new gameLogic).
 
   return (
     <div
@@ -97,7 +101,7 @@ export const HeroSection = ({
                 <LevelBadge
                   level={level}
                   currentXP={currentXP}
-                  xpForNextLevel={xpForNextLevel}
+                  xpForNextLevel={nextLevelXP} // <--- Pass the new prop here
                   levelName={role}
                 />
               </div>

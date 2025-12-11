@@ -1,7 +1,7 @@
 // user.ts
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-
+import { getRoleFromXP, getLevelFromXP } from "./gameLogic";
 // Default stats for new users
 const NEW_USER_DEFAULTS = {
   currentLevel: 1,
@@ -127,5 +127,32 @@ export const getLeaderboard = query({
       .withIndex("by_xp")      // Matches schema name
       .order("desc")           // Highest XP first
       .take(10);              // Only get the top 10
+  },
+});
+export const addXP = mutation({
+  args: {
+    userId: v.id("users"),
+    xpToAdd: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // 1. Get the current user
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found");
+
+    // 2. Calculate new totals
+    const newXP = (user.currentXP || 0) + args.xpToAdd;
+    
+    // 3. AUTOMATION: Calculate new Role and Level based on new XP
+    const newRole = getRoleFromXP(newXP);
+    const newLevel = getLevelFromXP(newXP);
+
+    // 4. Save everything at once
+    await ctx.db.patch(args.userId, {
+      currentXP: newXP,
+      role: newRole,      // <--- Automatically updates role!
+      currentLevel: newLevel, // <--- Automatically updates level!
+    });
+    
+    return `Gained ${args.xpToAdd} XP! You are now a ${newRole}.`;
   },
 });
