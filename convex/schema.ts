@@ -15,7 +15,8 @@ export default defineSchema({
     totalTests: v.number(),
     totalProjects: v.number(),
     totalCertifications: v.number(),
-  }).index("by_clerk_id", ["clerkId"]),
+  }).index("by_clerk_id", ["clerkId"]) 
+  .index("by_xp", ["currentXP"]),
 
   // ... Keep tests table as is ...
   tests: defineTable({

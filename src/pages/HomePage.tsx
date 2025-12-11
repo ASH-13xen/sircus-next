@@ -7,18 +7,27 @@ import { useUser } from "@clerk/nextjs";
 import { api } from "../../convex/_generated/api";
 import { Loader2 } from "lucide-react";
 
+// Import your shared game logic
+// (Make sure this path matches where you put the file)
+import { 
+  getRoleFromXP, 
+  getLevelFromXP, 
+  getNextLevelXP 
+} from "../../convex/gameLogic";
+
 import { HeroSection } from "@/components/home/HeroSection";
 import { StatsGrid } from "@/components/home/StatsGrid";
 import { SkillDomainsGrid } from "@/components/home/SkillDomainsGrid";
 import { RecentActivity } from "@/components/home/RecentActivity";
 import { AchievementsList } from "@/components/home/AchievementsList";
 
-// Default "Guest" Data to show when not logged in
+// Default "Guest" Data
 const GUEST_DATA = {
   name: "Guest",
-  level: 1,
   currentXP: 0,
-  role: "Visitor",
+  // We calculate these for guests too!
+  level: getLevelFromXP(0),
+  role: getRoleFromXP(0),
 };
 
 export default function HomePage() {
@@ -33,7 +42,7 @@ export default function HomePage() {
     }
   }, [isClerkLoaded, clerkUser, userData, storeUser]);
 
-  // 2. STATE: Global Loading (Waiting for Clerk to initialize)
+  // 2. STATE: Global Loading
   if (!isClerkLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -42,8 +51,7 @@ export default function HomePage() {
     );
   }
 
-  // 3. STATE: Not Logged In (Guest Mode)
-  // If Clerk is loaded but there is no user, render immediately with GUEST data.
+  // 3. STATE: Guest Mode
   if (!clerkUser) {
     return (
       <div className="min-h-screen">
@@ -52,9 +60,10 @@ export default function HomePage() {
           level={GUEST_DATA.level}
           currentXP={GUEST_DATA.currentXP}
           role={GUEST_DATA.role}
-          isGuest={true} // New prop to toggle UI
+          // Pass the calculated next goal (e.g., 1000)
+          nextLevelXP={getNextLevelXP(GUEST_DATA.currentXP)}
+          isGuest={true}
         />
-        {/* You might want to hide these or show demo versions for guests */}
         <div className="container mx-auto px-4 py-12 blur-sm select-none opacity-50 pointer-events-none">
           <div className="max-w-7xl mx-auto space-y-12">
             <h2 className="text-center text-2xl font-bold">
@@ -68,7 +77,7 @@ export default function HomePage() {
     );
   }
 
-  // 4. STATE: Logged In but Convex Loading
+  // 4. STATE: Convex Loading
   if (userData === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -77,7 +86,7 @@ export default function HomePage() {
     );
   }
 
-  // 5. STATE: Logged In but Syncing (User created but DB not updated yet)
+  // 5. STATE: Creating Profile
   if (userData === null) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background">
@@ -88,13 +97,20 @@ export default function HomePage() {
   }
 
   // 6. STATE: Authenticated & Loaded
+  // ✨ MAGIC FIX: Calculate stats on the fly from XP
+  // This ensures the UI is always correct, even if the DB "role" field is stale.
+  const displayLevel = getLevelFromXP(userData.currentXP);
+  const displayRole = getRoleFromXP(userData.currentXP);
+  const nextLevelGoal = getNextLevelXP(userData.currentXP);
+
   return (
     <div className="min-h-screen">
       <HeroSection
         name={userData.name}
-        level={userData.currentLevel}
+        level={displayLevel}         // Use calculated Level
         currentXP={userData.currentXP}
-        role={userData.role}
+        role={displayRole}           // Use calculated Role
+        nextLevelXP={nextLevelGoal}  // Pass the correct Goal
         isGuest={false}
       />
 
