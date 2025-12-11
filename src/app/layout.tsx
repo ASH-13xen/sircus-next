@@ -4,6 +4,7 @@ import "./globals.css";
 import ConvexClerkProvider from "@/providers/ConvexClerkProvider";
 import Navbar from "@/components/other/Navbar";
 import BackgroundGrid from "@/components/ui/BackgroundGrid";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -25,16 +26,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ConvexClerkProvider>
-      <html lang="en">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased  bg-black/90`}
-        >
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black/90`}
+      >
+        <ConvexClerkProvider>
           <Navbar />
           <BackgroundGrid />
           {children}
-        </body>
-      </html>
-    </ConvexClerkProvider>
+        </ConvexClerkProvider>
+      </body>
+    </html>
   );
 }
