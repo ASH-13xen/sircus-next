@@ -7,19 +7,19 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 
 export const createOrder = action({
-  args: { amount: v.number() },
+  args: {},
   handler: async (ctx, args) => {
     const key_id = process.env.RAZORPAY_KEY_ID;
     const key_secret = process.env.RAZORPAY_KEY_SECRET;
-
+    const amount = 49900;
     if (!key_id || !key_secret) {
       throw new Error("Razorpay keys missing");
     }
 
     const razor = new Razorpay({ key_id, key_secret });
 
-    return razor.orders.create({
-      amount: args.amount,
+    return await razor.orders.create({
+      amount: amount,
       currency: "INR",
     });
   },
