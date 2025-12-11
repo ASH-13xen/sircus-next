@@ -1,12 +1,12 @@
-import React from 'react'
-import Training from '@/pages/Training';
-
+import React from "react";
+import Training from "@/pages/Training";
+export const dynamic = "force-dynamic";
 const page = () => {
   return (
     <div>
-      <Training/>
+      <Training />
     </div>
-  )
-}
+  );
+};
 
-export default page
+export default page;
