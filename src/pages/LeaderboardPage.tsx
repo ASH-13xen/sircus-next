@@ -17,7 +17,7 @@ export default function LeaderboardPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white p-6 font-sans">
+    <div className="min-h-screen text-white p-6 font-sans">
       <div className="max-w-4xl mx-auto">
         
         {/* Header */}
