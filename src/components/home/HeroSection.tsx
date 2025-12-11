@@ -103,7 +103,7 @@ export const HeroSection = ({
                   <Button 
                     variant="outline" 
                     size="lg"
-                    className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 h-12 rounded-xl px-8"
+                    className="bg-black-600 hover:bg-green-50 text-white text-base px-8 h-12 rounded-xl transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_25px_rgba(59,130,246,0.5)]"
                   >
                     View Curriculum
                   </Button>
