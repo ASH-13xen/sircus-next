@@ -15,6 +15,7 @@ export default defineSchema({
     totalTests: v.number(),
     totalProjects: v.number(),
     totalCertifications: v.number(),
+    isPremium: v.optional(v.boolean()),
   }).index("by_clerk_id", ["clerkId"]) 
   .index("by_xp", ["currentXP"]),
 

@@ -1,10 +1,19 @@
 "use client"; 
 
-import { ArrowRight, Shield, Code, Database, Brain, BookOpen, Layers } from "lucide-react";
-
-
- import Link from "next/link";
-
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import Link from "next/link";
+import BuyPremiumButton from "@/components/BuyPremiumButton"; 
+import { 
+  ArrowRight, 
+  Shield, 
+  Code, 
+  Database, 
+  Brain, 
+  BookOpen, 
+  Layers, 
+  Lock 
+} from "lucide-react";
 
 const subjects = [
   { 
@@ -35,7 +44,8 @@ const subjects = [
     name: "Aptitude", 
     route: "/learn/aptitude", 
     icon: <BookOpen className="w-6 h-6 text-yellow-400" />,
-    description: "Sharpen your logical reasoning skills."
+    description: "Sharpen your logical reasoning skills.",
+    isPremium: true, // Mark this as a premium subject
   },
   { 
     name: "System Design", 
@@ -47,6 +57,9 @@ const subjects = [
 ];
 
 const LearnPage = () => {
+  // Fetch user data to check for premium status
+  const userData = useQuery(api.users.getUserProfile);
+
   return (
     <div className="min-h-screen bg-slate-950 text-white p-8 font-sans selection:bg-blue-500 selection:text-white">
       
@@ -63,7 +76,45 @@ const LearnPage = () => {
       {/* Grid Section */}
       <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {subjects.map((subject, idx) => {
-          // Define the card content
+          
+          // LOGIC: Check if this specific card should be locked
+          const isLocked = subject.isPremium && !userData?.isPremium;
+
+          // --- CASE 1: LOCKED CARD (Show Payment Button) ---
+          if (isLocked) {
+            return (
+              <div key={idx} className="h-full p-6 rounded-xl border border-yellow-500/30 bg-slate-900/80 relative overflow-hidden flex flex-col shadow-lg shadow-yellow-900/10">
+                {/* Golden Glow Effect */}
+                <div className="absolute inset-0 bg-linear-to-br from-yellow-500/5 to-transparent pointer-events-none" />
+                
+                <div className="relative z-10 flex flex-col h-full">
+                  <div className="mb-4 p-3 bg-slate-800/50 w-fit rounded-lg border border-yellow-500/40">
+                    <Lock className="w-6 h-6 text-yellow-400" />
+                  </div>
+                  
+                  <h2 className="text-xl font-bold mb-2 text-slate-100 flex items-center gap-2">
+                    {subject.name}
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border border-yellow-500/50 text-yellow-500 bg-yellow-500/10">
+                      Premium
+                    </span>
+                  </h2>
+                  
+                  <p className="text-slate-400 text-sm grow mb-6">
+                    Unlock lifetime access to Aptitude & Reasoning modules.
+                  </p>
+
+                  <div className="mt-auto w-full">
+                    {/* The Payment Button we created earlier */}
+                    <div className="w-full">
+                       <BuyPremiumButton />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          // --- CASE 2: NORMAL CARD (Link) ---
           const CardContent = (
             <div className={`
               h-full p-6 rounded-xl border transition-all duration-300 group relative overflow-hidden

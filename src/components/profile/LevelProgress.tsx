@@ -1,43 +1,47 @@
-"use client";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-
 interface LevelProgressProps {
   currentLevel: number;
   currentXP: number;
+  nextLevelXP: number; // New Prop
 }
 
 export default function LevelProgress({
   currentLevel,
   currentXP,
+  nextLevelXP,
 }: LevelProgressProps) {
-  const nextLevelXP = (currentLevel + 1) * 1000;
-  const xpToNextLevel = nextLevelXP - currentXP;
-  const currentLevelProgress = (currentXP / nextLevelXP) * 100;
+  
+  // Safe math to prevent division by zero
+  const safeGoal = nextLevelXP || 1000;
+  const progressPercent = Math.min((currentXP / safeGoal) * 100, 100);
 
   return (
-    <Card className="mt-8">
-      <CardHeader>
-        <CardTitle className="font-accent">Level Progress</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Level {currentLevel}</span>
-          <span className="text-muted-foreground">
-            Level {currentLevel + 1}
-          </span>
+    <div className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-6 shadow-sm">
+      <div className="flex justify-between items-end mb-4">
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+            Level Progress
+          </h3>
+          <div className="text-3xl font-display font-bold mt-1">
+            Level {currentLevel}
+          </div>
         </div>
-        <Progress value={currentLevelProgress} className="h-3" />
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-accent text-primary">
-            {currentXP.toLocaleString()} XP
-          </span>
-          <span className="text-muted-foreground">
-            {xpToNextLevel.toLocaleString()} XP to next level
-          </span>
+        <div className="text-right">
+          <div className="text-2xl font-bold text-primary">
+            {currentXP.toLocaleString()} <span className="text-muted-foreground text-base font-normal">/ {safeGoal.toLocaleString()} XP</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {safeGoal - currentXP} XP to Level {currentLevel + 1}
+          </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="h-4 bg-secondary rounded-full overflow-hidden">
+        <div
+          className="h-full bg-linear-to-r from-blue-500 to-cyan-400 transition-all duration-1000 ease-out"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+    </div>
   );
 }
