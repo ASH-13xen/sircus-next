@@ -24,7 +24,7 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
     const AMOUNTY = 50;
 
     const scene = new THREE.Scene();
-    
+
     // Camera setup
     const camera = new THREE.PerspectiveCamera(
       75,
@@ -32,15 +32,14 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
       1,
       10000
     );
-    // Adjusted camera position for better visibility
     camera.position.z = 1000;
-    camera.position.y = 500; 
+    camera.position.y = 500;
 
     const renderer = new THREE.WebGLRenderer({
-      alpha: true, // Crucial for transparent background
+      alpha: true,
       antialias: true,
     });
-    
+
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     containerRef.current.appendChild(renderer.domElement);
@@ -48,10 +47,8 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
     // Particles
     const positions: number[] = [];
     const colors: number[] = [];
-    
-    // FORCE COLOR: Light Blue/White to be visible on dark bg
-    // Using a slight blue tint (R:0.6, G:0.8, B:1.0) for a "tech" feel
-    const color = new THREE.Color(0xa5b4fc); 
+
+    const color = new THREE.Color(0xa5b4fc);
 
     for (let ix = 0; ix < AMOUNTX; ix++) {
       for (let iy = 0; iy < AMOUNTY; iy++) {
@@ -65,11 +62,17 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
     }
 
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(positions, 3)
+    );
+    geometry.setAttribute(
+      "color",
+      new THREE.Float32BufferAttribute(colors, 3)
+    );
 
     const material = new THREE.PointsMaterial({
-      size: 4, // Adjusted size
+      size: 4,
       vertexColors: true,
       transparent: true,
       opacity: 0.8,
@@ -79,26 +82,31 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
     scene.add(particles);
 
     let count = 0;
-    
+
     const animate = () => {
       const id = requestAnimationFrame(animate);
-      
-      // Wave Animation
-      const positions = particles.geometry.attributes.position.array as Float32Array;
+
+      const positions = particles.geometry.attributes.position
+        .array as Float32Array;
       let i = 0;
       for (let ix = 0; ix < AMOUNTX; ix++) {
         for (let iy = 0; iy < AMOUNTY; iy++) {
           const index = i * 3;
-          // Updated wave math for smoother flow
-          positions[index + 1] = (Math.sin((ix + count) * 0.3) * 50) + (Math.sin((iy + count) * 0.5) * 50);
+          positions[index + 1] =
+            Math.sin((ix + count) * 0.3) * 50 +
+            Math.sin((iy + count) * 0.5) * 50;
           i++;
         }
       }
       particles.geometry.attributes.position.needsUpdate = true;
 
       renderer.render(scene, camera);
-      count += 0.1;
-      
+
+      // --- SPEED CONTROL ---
+      // Changed from 0.1 to 0.02 for a slower, smoother wave
+      count += 0.04; 
+      // ---------------------
+
       if (sceneRef.current) sceneRef.current.animationId = id;
     };
 
@@ -117,9 +125,8 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
     return () => {
       window.removeEventListener("resize", handleResize);
       if (containerRef.current && renderer.domElement) {
-        // Safety check before removing
         if (containerRef.current.contains(renderer.domElement)) {
-            containerRef.current.removeChild(renderer.domElement);
+          containerRef.current.removeChild(renderer.domElement);
         }
       }
       renderer.dispose();
@@ -130,8 +137,10 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
   return (
     <div
       ref={containerRef}
-      // Removed -z-1 to prevent it from hiding behind body
-      className={cn("pointer-events-none fixed inset-0 top-0 left-0", className)}
+      className={cn(
+        "pointer-events-none fixed inset-0 top-0 left-0",
+        className
+      )}
       {...props}
     />
   );
