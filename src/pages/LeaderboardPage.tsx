@@ -221,7 +221,7 @@ export default function LeaderboardPage() {
                           )}
                           {user.collegeYear && (
                             <span className="text-[10px] px-2 py-0.5 bg-slate-800/50 text-slate-500 rounded border border-slate-700/50 hidden sm:inline-block">
-                              '{user.collegeYear.toString().slice(-2)}
+                              {user.collegeYear.toString().slice(-2)}
                             </span>
                           )}
                         </div>

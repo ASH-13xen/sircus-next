@@ -3,7 +3,6 @@
 import { Clock, Code2, Send } from "lucide-react";
 import { Button } from "../ui/button";
 import { useEffect, useState } from "react";
-import { formatTime } from "@/lib/utils"; // You'll need a helper to format seconds to MM:SS
 import toast from "react-hot-toast";
 
 interface TestHeaderProps {
