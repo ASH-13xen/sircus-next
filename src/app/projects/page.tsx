@@ -1,147 +1,127 @@
 "use client";
 
 import React, { useState } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/../convex/_generated/api";
+import { useUser } from "@clerk/nextjs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   Github, 
   ExternalLink, 
   PlayCircle, 
-  Image as ImageIcon, 
-  Layers, 
   Plus,
   Trash2,
   Search,
   X,
   Youtube,
-  Pencil // New Icon
+  Pencil,
+  Loader2
 } from "lucide-react";
-
-// --- TYPE DEFINITION ---
-interface Project {
-  id: string;
-  title: string;
-  about: string;
-  tech: string[];
-  thumbnail: string;
-  screenshots: string[];
-  video?: string; 
-  links: {
-    demo?: string;
-    repo?: string;
-    youtube?: string; 
-  };
-}
-
-// --- MOCK DATA ---
-const initialProjects: Project[] = [
-  {
-    id: "1",
-    title: "Nebula - AI Code Assistant",
-    about: "A VS Code extension that uses LLMs to predict code patterns and refactor legacy codebases automatically.",
-    tech: ["TypeScript", "Python", "TensorFlow", "Redis"],
-    thumbnail: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000&auto=format&fit=crop",
-    screenshots: ["https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000"],
-    video: "https://www.w3schools.com/html/mov_bbb.mp4",
-    links: { demo: "https://example.com", repo: "https://github.com" },
-  },
-];
+import { Id } from "@/../convex/_generated/dataModel";
+import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Link from "next/link";
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null); // Track which ID is being edited
+  const { user } = useUser();
+  
+  // --- CONVEX DATA ---
+  const projects = useQuery(api.portfolio.getProjectFeed);
+  const addProject = useMutation(api.portfolio.addProject);
+  const updateProject = useMutation(api.portfolio.editProject);
+  const deleteProject = useMutation(api.portfolio.deleteProject);
 
-  // Form State
+  // --- STATE ---
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<Id<"projects"> | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [formData, setFormData] = useState({
     title: "",
-    about: "",
+    description: "",
     tech: "",
     github: "",
     youtube: "",
-    screenshots: ""
+    screenshots: "", // Comma separated URLs
+    liveLink: ""
   });
-
-  // Reset form to clean state
-  const resetForm = () => {
-    setFormData({ title: "", about: "", tech: "", github: "", youtube: "", screenshots: "" });
-    setEditingId(null);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
 
   // --- ACTIONS ---
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this project?")) {
-        setProjects(projects.filter((p) => p.id !== id));
-    }
+  const resetForm = () => {
+    setFormData({ title: "", description: "", tech: "", github: "", youtube: "", screenshots: "", liveLink: "" });
+    setEditingId(null);
   };
 
-  const handleEdit = (project: Project) => {
-    setEditingId(project.id);
+  const handleCreateClick = () => {
+    if (!user) return toast.error("Please login to add a project");
+    resetForm();
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (project: any) => {
+    setEditingId(project._id);
     setFormData({
         title: project.title,
-        about: project.about,
-        tech: project.tech.join(", "), // Convert array back to CSV string
-        github: project.links.repo || "",
-        youtube: project.links.youtube || "",
-        screenshots: project.screenshots.join(", ") // Convert array back to CSV string
+        description: project.description,
+        tech: project.techStack,
+        github: project.githubLink || "",
+        youtube: project.youtubeLink || "",
+        screenshots: project.imageUrls || "",
+        liveLink: project.liveLink || ""
     });
     setIsModalOpen(true);
   };
 
-  const handleCreateClick = () => {
-    resetForm();
-    setIsModalOpen(true);
+  const handleDelete = async (id: Id<"projects">) => {
+    if (confirm("Are you sure you want to delete this project?")) {
+      try {
+        await deleteProject({ projectId: id });
+        toast.success("Project deleted");
+      } catch (err) {
+        toast.error("Failed to delete project");
+      }
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Process comma separated strings
-    const techArray = formData.tech.split(",").map(t => t.trim()).filter(t => t);
-    const screenshotArray = formData.screenshots.split(",").map(s => s.trim()).filter(s => s);
-
-    // Common object structure
-    const projectData = {
+    const payload = {
       title: formData.title,
-      about: formData.about,
-      tech: techArray,
-      thumbnail: screenshotArray.length > 0 ? screenshotArray[0] : "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1000",
-      screenshots: screenshotArray,
-      links: {
-        repo: formData.github,
-        youtube: formData.youtube 
-      }
+      description: formData.description,
+      techStack: formData.tech, // Stored as string in DB based on your preference
+      githubLink: formData.github,
+      youtubeLink: formData.youtube,
+      imageUrls: formData.screenshots,
+      liveLink: formData.liveLink
     };
 
-    if (editingId) {
-        // --- UPDATE EXISTING ---
-        setProjects(prev => prev.map(p => 
-            p.id === editingId 
-            ? { ...p, ...projectData } // Merge existing ID/Video with new data
-            : p
-        ));
-    } else {
-        // --- CREATE NEW ---
-        const newProject: Project = {
-            id: Date.now().toString(),
-            ...projectData,
-            video: "" // Default video empty for now
-        };
-        setProjects([newProject, ...projects]);
+    try {
+      if (editingId) {
+        await updateProject({ projectId: editingId, ...payload });
+        toast.success("Project updated!");
+      } else {
+        await addProject(payload);
+        toast.success("Project created!");
+      }
+      setIsModalOpen(false);
+      resetForm();
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong");
     }
-    
-    setIsModalOpen(false);
-    resetForm();
   };
 
+  // Filter projects by search
+  const filteredProjects = projects?.filter(p => 
+    p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    p.author?.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="min-h-screen bg-[#02040a] relative isolate pb-20">
+    <div className="min-h-screen bg-[#02040a] relative isolate pb-20 text-white font-sans">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-900/20 rounded-full blur-[100px] -z-10" />
       <div 
         className="absolute inset-0 opacity-10 pointer-events-none -z-10" 
@@ -152,7 +132,7 @@ export default function ProjectsPage() {
       <div className="container mx-auto px-4 pt-10 pb-12">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-left">
-            <h1 className="text-3xl font-bold text-white tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight">
               Project <span className="text-blue-500">Hub</span>
             </h1>
             <p className="text-slate-400 text-sm mt-1">Manage and showcase your work</p>
@@ -163,7 +143,9 @@ export default function ProjectsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" size={16} />
                 <input 
                   type="text" 
-                  placeholder="Search users..." 
+                  placeholder="Search projects or authors..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-[#0b1021] border border-slate-800 text-slate-200 text-sm rounded-full pl-10 pr-4 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-600"
                 />
             </div>
@@ -176,20 +158,25 @@ export default function ProjectsPage() {
 
       {/* --- PROJECTS GRID --- */}
       <div className="container mx-auto px-4 max-w-6xl">
-        <div className="grid grid-cols-1 gap-12">
-          {projects.length > 0 ? (
-            projects.map((project) => (
-              <ProjectCard 
-                key={project.id} 
-                project={project} 
-                onDelete={handleDelete}
-                onEdit={handleEdit} 
-              />
-            ))
-          ) : (
-            <div className="text-center text-slate-500 py-20">No projects found. Add one!</div>
-          )}
-        </div>
+        {projects === undefined ? (
+          <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-blue-500"/></div>
+        ) : (
+          <div className="grid grid-cols-1 gap-12">
+            {filteredProjects && filteredProjects.length > 0 ? (
+              filteredProjects.map((project) => (
+                <ProjectCard 
+                  key={project._id} 
+                  project={project} 
+                  currentUserId={user?.id} // Pass Clerk ID to check ownership
+                  onDelete={handleDelete}
+                  onEdit={handleEdit} 
+                />
+              ))
+            ) : (
+              <div className="text-center text-slate-500 py-20">No projects found. Be the first to add one!</div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* --- ADD/EDIT MODAL --- */}
@@ -212,10 +199,9 @@ export default function ProjectsPage() {
                 <label className="text-xs font-medium text-slate-400 uppercase">Project Title</label>
                 <input 
                   required
-                  name="title"
                   value={formData.title}
-                  onChange={handleInputChange}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none"
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-hidden"
                 />
               </div>
 
@@ -223,11 +209,10 @@ export default function ProjectsPage() {
                 <label className="text-xs font-medium text-slate-400 uppercase">Description</label>
                 <textarea 
                   required
-                  name="about"
-                  value={formData.about}
-                  onChange={handleInputChange}
                   rows={3}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none resize-none"
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-hidden resize-none"
                 />
               </div>
 
@@ -235,20 +220,18 @@ export default function ProjectsPage() {
                 <label className="text-xs font-medium text-slate-400 uppercase">Technologies (comma separated)</label>
                 <input 
                   required
-                  name="tech"
                   value={formData.tech}
-                  onChange={handleInputChange}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none"
+                  onChange={(e) => setFormData({...formData, tech: e.target.value})}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-hidden"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium text-slate-400 uppercase">Screenshots (Image URLs)</label>
+                <label className="text-xs font-medium text-slate-400 uppercase">Screenshots (Image URLs, comma separated)</label>
                 <input 
-                  name="screenshots"
                   value={formData.screenshots}
-                  onChange={handleInputChange}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none"
+                  onChange={(e) => setFormData({...formData, screenshots: e.target.value})}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-hidden"
                 />
               </div>
 
@@ -256,21 +239,28 @@ export default function ProjectsPage() {
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-slate-400 uppercase">GitHub Link</label>
                   <input 
-                    name="github"
                     value={formData.github}
-                    onChange={handleInputChange}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none"
+                    onChange={(e) => setFormData({...formData, github: e.target.value})}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-hidden"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-slate-400 uppercase">YouTube Link</label>
                   <input 
-                    name="youtube"
                     value={formData.youtube}
-                    onChange={handleInputChange}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none"
+                    onChange={(e) => setFormData({...formData, youtube: e.target.value})}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-hidden"
                   />
                 </div>
+              </div>
+               
+              <div className="space-y-2">
+                  <label className="text-xs font-medium text-slate-400 uppercase">Live Demo Link</label>
+                  <input 
+                    value={formData.liveLink}
+                    onChange={(e) => setFormData({...formData, liveLink: e.target.value})}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-hidden"
+                  />
               </div>
 
               <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4 py-6">
@@ -284,68 +274,91 @@ export default function ProjectsPage() {
   );
 }
 
-// --- PROJECT CARD COMPONENT ---
+// --- PROJECT CARD ---
+// --- PROJECT CARD ---
 function ProjectCard({ 
   project, 
+  currentUserId,
   onDelete, 
   onEdit 
 }: { 
-  project: Project, 
-  onDelete: (id: string) => void,
-  onEdit: (project: Project) => void 
+  project: any, 
+  currentUserId?: string | null,
+  onDelete: (id: Id<"projects">) => void,
+  onEdit: (project: any) => void 
 }) {
-  const [activeMedia, setActiveMedia] = useState<"video" | "image" | string>("image");
+  const [activeMedia, setActiveMedia] = useState<"video" | string>("image");
+
+  // Helper to split strings into arrays safely
+  const techArray = project.techStack ? project.techStack.split(",").map((t: string) => t.trim()) : [];
+  const screenshotArray = project.imageUrls ? project.imageUrls.split(",").map((s: string) => s.trim()).filter((s: string) => s) : [];
+  
+  // Default Thumbnail
+  const thumbnail = screenshotArray.length > 0 ? screenshotArray[0] : "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1000";
+
+  // Check Ownership
+  const isOwner = currentUserId && project.author?.clerkId === currentUserId;
 
   const getMainMedia = () => {
-    if (activeMedia === "video" && project.video) {
-        return <video src={project.video} controls className="w-full h-full object-cover" poster={project.thumbnail} />;
+    // 1. YouTube Video Logic (Basic Embed)
+    if (activeMedia === "video" && project.youtubeLink) {
+        // Extract ID from URL for embed (Simple implementation)
+        const videoId = project.youtubeLink.split("v=")[1]?.split("&")[0] || project.youtubeLink.split("/").pop();
+        return <iframe src={`https://www.youtube.com/embed/${videoId}`} className="w-full h-full" allowFullScreen />;
     }
-    if (typeof activeMedia === "string" && activeMedia !== "video" && activeMedia !== "image") {
+    // 2. Screenshot
+    if (activeMedia !== "video" && activeMedia !== "image") {
         return <img src={activeMedia} alt="screenshot" className="w-full h-full object-cover" />;
     }
-    return <img src={project.thumbnail} alt={project.title} className="w-full h-full object-cover opacity-90" />;
+    // 3. Default
+    return <img src={thumbnail} alt={project.title} className="w-full h-full object-cover opacity-90" />;
   };
 
   return (
     <div className="bg-[#0b1021] border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition-colors duration-300 shadow-2xl flex flex-col lg:flex-row group relative">
       
-      {/* ACTION BUTTONS (Top Right) */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-        <button 
-            onClick={() => onEdit(project)}
-            className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white p-2 rounded-full border border-slate-600 backdrop-blur-md"
-            title="Edit Project"
-        >
-            <Pencil size={16} />
-        </button>
-        <button 
-            onClick={() => onDelete(project.id)}
-            className="bg-red-500/10 hover:bg-red-500/90 text-red-500 hover:text-white p-2 rounded-full border border-red-500/50 backdrop-blur-md"
-            title="Delete Project"
-        >
-            <Trash2 size={16} />
-        </button>
-      </div>
+      {/* ACTION BUTTONS (Only if Owner) 
+         - Moved to 'left-4' to avoid overlap on the right side.
+         - Reduced padding to 'p-1.5' for a smaller footprint.
+      */}
+      {isOwner && (
+        <div className="absolute top-4 left-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+            <button 
+                onClick={() => onEdit(project)}
+                className="bg-slate-900/80 hover:bg-blue-600 text-slate-200 hover:text-white p-1.5 rounded-lg border border-slate-700 backdrop-blur-md transition-colors"
+                title="Edit Project"
+            >
+                <Pencil size={14} />
+            </button>
+            <button 
+                onClick={() => onDelete(project._id)}
+                className="bg-black/50 hover:bg-red-600 text-red-400 hover:text-white p-1.5 rounded-lg border border-red-900/30 hover:border-red-600 backdrop-blur-md transition-colors"
+                title="Delete Project"
+            >
+                <Trash2 size={14} />
+            </button>
+        </div>
+      )}
 
       {/* --- LEFT: MEDIA SECTION --- */}
-      <div className="w-full lg:w-2/5 bg-black/50 border-b lg:border-b-0 lg:border-r border-slate-800 relative">
+      <div className="w-full lg:w-2/5 bg-black/50 border-b lg:border-b-0 lg:border-r border-slate-800 relative z-10">
         <div className="aspect-video relative overflow-hidden flex items-center justify-center bg-slate-900">
           {getMainMedia()}
-          <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white flex items-center gap-2 border border-white/10">
-            {project.video && activeMedia === "video" ? "Playing Demo" : "Preview"}
-          </div>
         </div>
 
+        {/* Media Thumbnails */}
         <div className="p-4 grid grid-cols-4 gap-2">
-           {project.video && (
-             <button 
+           {/* YouTube Trigger */}
+           {project.youtubeLink && (
+              <button 
                 onClick={() => setActiveMedia("video")}
-                className={`col-span-1 aspect-video rounded-lg border flex flex-col items-center justify-center gap-1 transition-all ${activeMedia === "video" ? "border-blue-500 bg-blue-500/10 text-blue-400" : "border-slate-700 bg-slate-800/50 text-slate-400"}`}
-             >
-                <PlayCircle size={20} /> <span className="text-[10px] uppercase font-bold">Video</span>
-             </button>
+                className={`col-span-1 aspect-video rounded-lg border flex flex-col items-center justify-center gap-1 transition-all ${activeMedia === "video" ? "border-red-500 bg-red-500/10 text-red-400" : "border-slate-700 bg-slate-800/50 text-slate-400"}`}
+              >
+                 <Youtube size={20} /> <span className="text-[10px] uppercase font-bold">Video</span>
+              </button>
            )}
-           {project.screenshots.map((shot, i) => (
+           {/* Screenshots Triggers */}
+           {screenshotArray.map((shot: string, i: number) => (
              <button
                 key={i}
                 onClick={() => setActiveMedia(shot)}
@@ -354,40 +367,35 @@ function ProjectCard({
                 <img src={shot} alt="thumb" className="w-full h-full object-cover" />
              </button>
            ))}
-           {project.links.youtube && (
-              <a 
-                href={project.links.youtube}
-                target="_blank"
-                rel="noreferrer"
-                className="col-span-1 aspect-video rounded-lg border border-red-900/50 bg-red-900/10 text-red-400 hover:bg-red-900/20 flex flex-col items-center justify-center gap-1 transition-all"
-              >
-                 <Youtube size={20} /> <span className="text-[10px] uppercase font-bold">YouTube</span>
-              </a>
-           )}
         </div>
       </div>
 
       {/* --- RIGHT: CONTENT SECTION --- */}
-      <div className="flex-1 p-6 md:p-8 flex flex-col">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6 pr-8">
+      <div className="flex-1 p-6 md:p-8 flex flex-col relative z-0">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4 pr-8">
           <div>
             <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">
               {project.title}
             </h2>
-            <div className="flex items-center gap-2 text-slate-500 text-sm">
-                <Layers size={14} /> <span>Full Stack Application</span>
-            </div>
+            {/* Author Link */}
+            <Link href={`/profile/${project.author?._id}`} className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors">
+                 <Avatar className="w-5 h-5 border border-slate-700">
+                    <AvatarImage src={project.author?.image} />
+                    <AvatarFallback>{project.author?.name?.[0]}</AvatarFallback>
+                 </Avatar>
+                 By {project.author?.name}
+            </Link>
           </div>
           
-          <div className="flex gap-3">
-             {project.links.repo && (
+          <div className="flex gap-3 mt-2 md:mt-0">
+             {project.githubLink && (
                 <Button variant="outline" size="sm" asChild className="border-slate-700 bg-transparent text-slate-300 hover:text-white hover:bg-slate-800 gap-2 cursor-pointer">
-                    <a href={project.links.repo} target="_blank" rel="noreferrer"><Github size={16} /> Code</a>
+                    <a href={project.githubLink} target="_blank" rel="noreferrer"><Github size={16} /> Code</a>
                 </Button>
              )}
-             {project.links.demo && (
+             {project.liveLink && (
                 <Button size="sm" asChild className="bg-blue-600 hover:bg-blue-700 text-white gap-2 cursor-pointer">
-                    <a href={project.links.demo} target="_blank" rel="noreferrer"><ExternalLink size={16} /> Live</a>
+                    <a href={project.liveLink} target="_blank" rel="noreferrer"><ExternalLink size={16} /> Live</a>
                 </Button>
              )}
           </div>
@@ -395,13 +403,13 @@ function ProjectCard({
 
         <div className="mb-8">
             <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">About the project</h3>
-            <p className="text-slate-400 leading-relaxed text-sm">{project.about}</p>
+            <p className="text-slate-400 leading-relaxed text-sm whitespace-pre-wrap">{project.description}</p>
         </div>
 
         <div className="mt-auto">
             <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">Technologies Built With</h3>
             <div className="flex flex-wrap gap-2">
-                {project.tech.map((t, i) => (
+                {techArray.map((t: string, i: number) => (
                     <Badge key={i} variant="outline" className="bg-slate-800/50 text-blue-300 border-slate-700 py-1 px-3">
                         {t}
                     </Badge>

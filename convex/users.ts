@@ -59,17 +59,69 @@ export const getUserProfile = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return null;
 
-    const userId = identity.subject;
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) return null;
+
+    // Convert storage ID to a useful URL
+    let resumeUrl = null;
+    if (user.resumeStorageId) {
+      resumeUrl = await ctx.storage.getUrl(user.resumeStorageId);
+    }
+    let transcriptUrl = null;
+    if (user.transcriptStorageId) {
+      transcriptUrl = await ctx.storage.getUrl(user.transcriptStorageId);
+    }
+
+    return { ...user, resumeUrl, transcriptUrl };
+  },
+});
+//update resume
+export const generateUploadUrl = mutation(async (ctx) => {
+  return await ctx.storage.generateUploadUrl();
+});
+
+// 2. NEW: Save the storage ID after the frontend finishes uploading
+export const updateResume = mutation({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", userId))
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
-    return user; // Returns the single combined object
+    if (!user) throw new Error("User not found");
+
+    await ctx.db.patch(user._id, {
+      resumeStorageId: args.storageId,
+    });
   },
 });
+//transcript upload
+export const updateTranscript = mutation({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
 
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) throw new Error("User not found");
+
+    await ctx.db.patch(user._id, {
+      transcriptStorageId: args.storageId,
+    });
+  },
+});
 // ==========================================
 // 2. WEBHOOK FUNCTIONS (Called by Clerk)
 // ==========================================
@@ -124,11 +176,19 @@ export const getUserById = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
-    
-    // If the ID is invalid or user deleted
     if (!user) return null;
 
-    return user;
+    // Convert storage ID to a useful URL
+    let resumeUrl = null;
+    if (user.resumeStorageId) {
+      resumeUrl = await ctx.storage.getUrl(user.resumeStorageId);
+    }
+    let transcriptUrl = null;
+    if (user.transcriptStorageId) {
+      transcriptUrl = await ctx.storage.getUrl(user.transcriptStorageId);
+    }
+
+    return { ...user, resumeUrl, transcriptUrl };
   },
 });
 export const getLeaderboard = query({

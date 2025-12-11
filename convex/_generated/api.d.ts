@@ -10,8 +10,11 @@
 
 import type * as gameLogic from "../gameLogic.js";
 import type * as http from "../http.js";
+import type * as interviews from "../interviews.js";
 import type * as payments from "../payments.js";
+import type * as portfolio from "../portfolio.js";
 import type * as seed from "../seed.js";
+import type * as stream from "../stream.js";
 import type * as tests from "../tests.js";
 import type * as users from "../users.js";
 
@@ -24,8 +27,11 @@ import type {
 declare const fullApi: ApiFromModules<{
   gameLogic: typeof gameLogic;
   http: typeof http;
+  interviews: typeof interviews;
   payments: typeof payments;
+  portfolio: typeof portfolio;
   seed: typeof seed;
+  stream: typeof stream;
   tests: typeof tests;
   users: typeof users;
 }>;

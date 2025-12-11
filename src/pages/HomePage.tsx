@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "../../convex/_generated/api";
@@ -11,9 +11,7 @@ import {
   Database, 
   BrainCircuit, 
   Cpu, 
-  TerminalSquare, 
-  ChevronLeft, 
-  ChevronRight 
+  TerminalSquare 
 } from "lucide-react";
 
 // Import your shared game logic
@@ -26,8 +24,8 @@ import {
 import { HeroSection } from "@/components/home/HeroSection";
 import { StatsGrid } from "@/components/home/StatsGrid";
 import { SkillDomainsGrid } from "@/components/home/SkillDomainsGrid";
-import { RecentActivity } from "@/components/home/RecentActivity";
-import { AchievementsList } from "@/components/home/AchievementsList";
+// Assuming you have this component created from the code provided
+import { DottedSurface } from "@/components/ui/DottedSurface"; 
 
 // --- UPDATED COMPONENT: Sliding Topic Banner with Manual Controls ---
 
@@ -75,76 +73,6 @@ const TOPICS = [
 ];
 
 
-
-// ... (keep your TOPICS array exactly as it was) ...
-
-const SlidingTopicBanner = () => {
-  // We duplicate the topics to ensure the loop is seamless
-  const duplicatedTopics = [...TOPICS, ...TOPICS];
-
-  return (
-    <div className="w-full py-12 relative border-y border-slate-800 bg-[#02040a]/50 backdrop-blur-sm my-8 group overflow-hidden">
-      
-      {/* 1. Inject Styles for the Animation */}
-      <style>
-        {`
-          @keyframes slide-right {
-            from { transform: translateX(-50%); }
-            to { transform: translateX(0); }
-          }
-          
-          .animate-infinite-slide {
-            animation: slide-right 20s linear infinite;
-          }
-
-          /* Optional: Pause animation on hover for better UX */
-          .group:hover .animate-infinite-slide {
-            animation-play-state: paused;
-          }
-        `}
-      </style>
-
-      {/* 2. Gradient Fade Edges (Visual Polish) */}
-      <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-[#02040a] to-transparent z-20 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#02040a] to-transparent z-20 pointer-events-none" />
-
-      {/* 3. The Sliding Track */}
-      <div className="flex w-max animate-infinite-slide">
-        {duplicatedTopics.map((topic, idx) => {
-          const Icon = topic.icon;
-          return (
-            <div 
-              key={idx} 
-              className="mx-4 relative h-[220px] w-[320px] shrink-0 rounded-2xl overflow-hidden border border-slate-800 hover:border-slate-600 transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-900/20 bg-[#0b1021] group/card"
-            >
-              {/* Background Image */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={topic.img} 
-                alt={topic.label} 
-                className="object-cover w-full h-full opacity-40 group-hover/card:opacity-60 transition-opacity duration-500 grayscale group-hover/card:grayscale-0" 
-              />
-              
-              {/* Overlay Content */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0b1021] via-[#0b1021]/60 to-transparent p-6 flex flex-col justify-end">
-                <div className={`inline-flex p-2 rounded-lg ${topic.bg} border ${topic.border} w-fit mb-3 backdrop-blur-md`}>
-                  <Icon className={`w-5 h-5 ${topic.color}`} />
-                </div>
-                <h3 className="text-xl font-bold text-white tracking-tight group-hover/card:text-blue-200 transition-colors">
-                  {topic.label}
-                </h3>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-// ... (Rest of your HomePage export remains the same)
-
-
 // --- MAIN COMPONENT ---
 
 // Default "Guest" Data
@@ -186,7 +114,10 @@ export default function HomePage() {
   if (!clerkUser) {
     return (
       <div className="min-h-screen bg-[#02040a] relative isolate overflow-hidden">
-        {/* Background Grid Pattern */}
+        {/* NEW: 3D Dotted Surface Background */}
+        <DottedSurface className="opacity-100" />
+        
+        {/* Existing Background Grid Pattern (Layered behind dots via z-index) */}
         <div 
           className="absolute inset-0 opacity-10 pointer-events-none -z-10" 
           style={{ backgroundImage: `radial-gradient(#3b82f6 1px, transparent 1px)`, backgroundSize: '32px 32px' }}
@@ -200,9 +131,6 @@ export default function HomePage() {
           nextLevelXP={getNextLevelXP(GUEST_DATA.currentXP)}
           isGuest={true}
         />
-        
-        {/* NEW SLIDER WITH BUTTONS */}
-        <SlidingTopicBanner />
         
         <div className="container mx-auto px-4 py-12 relative">
           {/* Locked State Overlay */}
@@ -248,7 +176,10 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#02040a] relative isolate overflow-hidden">
-      {/* Background Grid Pattern */}
+      {/* NEW: 3D Dotted Surface Background */}
+      <DottedSurface className="opacity-100" />
+
+      {/* Existing Background Grid Pattern */}
       <div 
         className="absolute inset-0 opacity-10 pointer-events-none -z-10" 
         style={{ backgroundImage: `radial-gradient(#3b82f6 1px, transparent 1px)`, backgroundSize: '32px 32px' }}
@@ -262,9 +193,11 @@ export default function HomePage() {
         nextLevelXP={nextLevelGoal}
         isGuest={false}
       />
-
-      {/* NEW SLIDER WITH BUTTONS */}
-      <SlidingTopicBanner />
+      
+      {/* If you have the other components (StatsGrid, SkillDomainsGrid) 
+         visible for logged in users, they would go here.
+         Currently your original code only showed HeroSection for auth users.
+      */}
     </div>
   );
 }
