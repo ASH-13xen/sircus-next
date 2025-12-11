@@ -18,7 +18,7 @@ export const createOrder = action({
 
     const razor = new Razorpay({ key_id, key_secret });
 
-    return await razor.orders.create({
+    return razor.orders.create({
       amount: args.amount,
       currency: "INR",
     });
