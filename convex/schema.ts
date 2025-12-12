@@ -41,26 +41,61 @@ export default defineSchema({
     techStack: v.string(), // e.g. "React, Convex, Tailwind"
     githubLink: v.optional(v.string()),
     youtubeLink: v.optional(v.string()), // New
-    imageUrls: v.optional(v.string()),   // New (Comma separated string)
+    imageUrls: v.optional(v.string()), // New (Comma separated string)
     liveLink: v.optional(v.string()),
-  }).index("by_user", ["userId"])
-  .searchIndex("search_projects", { 
-    searchField: "title", 
-    filterFields: ["userId"] 
-  }),
+  })
+    .index("by_user", ["userId"])
+    .searchIndex("search_projects", {
+      searchField: "title",
+      filterFields: ["userId"],
+    }),
+  perform_tests: defineTable({
+    userId: v.string(),
+    skill: v.string(),
+    status: v.string(), // "live" or "completed"
+    startTime: v.optional(v.number()),
+    // Test Content
+    questions: v.array(
+      v.object({
+        id: v.string(),
+
+        // New fields
+        title: v.string(),
+        description: v.string(),
+
+        // *** DELETE THIS LINE BELOW IF IT EXISTS ***
+        // question: v.string(),
+
+        starterCode: v.string(),
+        userCode: v.optional(v.string()),
+        isSolved: v.optional(v.boolean()),
+      })
+    ),
+
+    // User Progress
+    currentCode: v.string(),
+    language: v.string(),
+    score: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_skill", ["userId", "skill"]),
+
   tests: defineTable({
     title: v.string(),
     domain: v.string(),
     topic: v.string(),
     startTime: v.number(),
     durationMinutes: v.number(),
+    question: v.optional(v.string()),
     maxPoints: v.number(),
     createdBy: v.string(),
     status: v.optional(v.string()),
     meetingId: v.optional(v.string()),
+    output: v.optional(v.string()),
     problemStatement: v.optional(v.string()),
     currentCode: v.optional(v.string()),
     language: v.optional(v.string()),
+    consoleOutput: v.optional(v.string()),
   }).index("by_creator", ["createdBy"]),
 
   interviews: defineTable({

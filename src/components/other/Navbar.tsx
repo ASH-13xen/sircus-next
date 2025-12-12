@@ -29,6 +29,7 @@ export default function Navbar() {
     { path: "/learn", label: "Learn" },
     { path: "/training", label: "Training" },
     { path: "/test", label: "Test" },
+    { path: "/perform", label: "Perform" },
     { path: "/projects", label: "Projects" },
     { path: "/leaderboard", label: "Leaderboard" },
   ];

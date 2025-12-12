@@ -306,3 +306,31 @@ export const finalizeTestResult = mutation({
     // --- GAME LOGIC END ---
   },
 });
+
+export const updateTestOutput = mutation({
+  args: {
+    testId: v.id("tests"),
+    output: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // This saves the console execution result to the DB
+    // so the proctor can see it in real-time.
+    await ctx.db.patch(args.testId, {
+      consoleOutput: args.output,
+    });
+  },
+});
+
+export const updateQuestion = mutation({
+  args: { testId: v.id("tests"), question: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.testId, { question: args.question });
+  },
+});
+
+export const updateOutput = mutation({
+  args: { testId: v.id("tests"), output: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.testId, { output: args.output });
+  },
+});
