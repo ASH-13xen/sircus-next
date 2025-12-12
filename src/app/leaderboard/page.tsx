@@ -1,6 +1,4 @@
-import LeaderboardPage from "@/pages/LeaderboardPage";
-export const dynamic = "force-dynamic";
-
+import LeaderboardPage from "@/p/LeaderboardPage";
 const Leaderboard = () => {
   return (
     <div>

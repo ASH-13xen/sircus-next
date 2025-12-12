@@ -76,11 +76,12 @@ export default function PerformCodeEditor({ testId }: PerformEditorProps) {
 
     try {
       // *** FIX: Call the Convex Action instead of fetch ***
+      if (!testData) return;
       const runOutput = await executeCode({
         language:
-          testData?.language === "javascript"
+          (testData.language === "javascript"
             ? "javascript"
-            : testData?.language,
+            : testData.language) || "javascript",
         code: localCode,
       });
 

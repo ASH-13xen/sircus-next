@@ -102,6 +102,15 @@ export const getTestById = query({
     return { ...test, isRegistered };
   },
 });
+export const submitTest = mutation({
+  args: { testId: v.id("tests") },
+  handler: async (ctx, args) => {
+    // 1. Mark the test as submitted/completed in the database
+    await ctx.db.patch(args.testId, {
+      status: "completed", // OR use isSubmitted: true, depending on your schema
+    });
+  },
+});
 
 // --- USER FUNCTIONS ---
 

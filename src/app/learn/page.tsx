@@ -1,5 +1,4 @@
-import LearnPage from "@/pages/LearnPage";
-export const dynamic = "force-dynamic";
+import LearnPage from "@/p/LearnPage";
 const Learn = () => {
   return (
     <div>

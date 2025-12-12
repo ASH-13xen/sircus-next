@@ -315,15 +315,15 @@ export const checkCooldown = query({
     if (!lastTest) {
       return { allowed: true, daysRemaining: 0 };
     }
+    if (lastTest && lastTest.startTime) {
+      const timeDiff = Date.now() - lastTest.startTime;
 
-    const timeDiff = Date.now() - lastTest.startTime;
-
-    if (timeDiff < tenDaysInMs) {
-      const remainingMs = tenDaysInMs - timeDiff;
-      const daysRemaining = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
-      return { allowed: false, daysRemaining };
+      if (timeDiff < tenDaysInMs) {
+        const remainingMs = tenDaysInMs - timeDiff;
+        const daysRemaining = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+        return { allowed: false, daysRemaining };
+      }
     }
-
     return { allowed: true, daysRemaining: 0 };
   },
 });
@@ -348,7 +348,7 @@ export const createPerformTest = mutation({
       .order("desc")
       .first();
 
-    if (lastTest) {
+    if (lastTest && lastTest.startTime) {
       const timeDiff = Date.now() - lastTest.startTime;
       if (timeDiff < tenDaysInMs) {
         throw new Error(`Cooldown active. Please wait.`);

@@ -1,5 +1,5 @@
 import React from "react";
-import Training from "@/pages/Training";
+import Training from "@/p/Training";
 export const dynamic = "force-dynamic";
 const page = () => {
   return (

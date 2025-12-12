@@ -1,6 +1,4 @@
-import Profile from "@/pages/Profile";
-export const dynamic = "force-dynamic";
-
+import Profile from "@/p/Profile";
 const ProfilePage = () => {
   return <Profile />;
 };
